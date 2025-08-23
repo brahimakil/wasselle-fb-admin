@@ -14,6 +14,7 @@ import Subscriptions from './pages/Subscriptions';
 import Wallets from './pages/Wallets';
 import Payments from './pages/Payments';
 import Countries from './pages/Countries';
+import Vehicles from './pages/Vehicles';
 import { PostService } from './services/postService';
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
               <Route path="wallets" element={<Wallets />} />
               <Route path="payments" element={<Payments />} />
               <Route path="countries" element={<Countries />} />
+              <Route path="vehicles" element={<Vehicles />} />
             </Route>
             
             {/* Redirect root to dashboard if authenticated, otherwise to login */}
