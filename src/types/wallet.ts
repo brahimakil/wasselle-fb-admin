@@ -9,7 +9,7 @@ export interface UserWallet {
 }
 
 export interface Transaction {
-  id: string;
+  id: string; // This will be the external transaction ID from admin
   userId: string;
   type: 'recharge' | 'post_payment' | 'post_earning' | 'cashout' | 'admin_adjustment';
   amount: number; // Positive for credits, negative for debits
@@ -18,6 +18,7 @@ export interface Transaction {
   relatedUserId?: string; // For post payments/earnings
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   paymentMethod?: 'admin' | 'stripe' | 'paypal'; // For future payment gateways
+  paymentMethodId?: string; // Reference to PaymentMethod collection
   metadata?: {
     [key: string]: any;
   };

@@ -158,6 +158,12 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, users
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                           {transaction.description}
                         </p>
+                        {/* Show transaction type indicator */}
+                        {transaction.id.startsWith('AUTO_') && (
+                          <span className="inline-block mt-1 text-xs px-1 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded">
+                            System
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4">

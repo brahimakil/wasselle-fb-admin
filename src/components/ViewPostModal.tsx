@@ -30,14 +30,16 @@ const ViewPostModal: React.FC<ViewPostModalProps> = ({ post, onClose }) => {
   };
 
   const getStatusColor = () => {
-    if (post.isCompleted) return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
-    if (!post.isActive) return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+    if (post.status === 'completed') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
+    if (post.status === 'cancelled') return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+    if (post.status === 'subscribed') return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
     return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
   };
 
   const getStatusLabel = () => {
-    if (post.isCompleted) return 'Completed';
-    if (!post.isActive) return 'Cancelled';
+    if (post.status === 'cancelled') return 'Cancelled';
+    if (post.status === 'completed') return 'Completed';
+    if (post.status === 'subscribed') return 'Subscribed';
     return 'Active';
   };
 

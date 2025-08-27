@@ -45,7 +45,7 @@ export class PostExpirationService {
     success: boolean;
     processedCount: number;
     expiredCount: number;
-    expiredPosts: string[];
+    expiredPosts: Array<{id: string, title: string, serviceType?: string}>; // Updated type
     error?: string;
   }> {
     try {
@@ -70,7 +70,7 @@ export class PostExpirationService {
       }
       
       const batch = writeBatch(db);
-      const expiredPosts: string[] = [];
+      const expiredPosts: Array<{id: string, title: string, serviceType?: string}> = []; // Updated type
       const expiredSubscriptions: string[] = [];
       let processedCount = 0;
       
@@ -98,7 +98,16 @@ export class PostExpirationService {
             expiredReason: 'Travel time completed'
           });
           
-          expiredPosts.push(post.id);
+          // Create a readable title for the post
+          const postTitle = post.description 
+            ? `${post.serviceType || 'Post'}: ${post.description.substring(0, 30)}${post.description.length > 30 ? '...' : ''}`
+            : `${post.serviceType || 'Post'} from ${post.departureDate}`;
+          
+          expiredPosts.push({
+            id: post.id,
+            title: postTitle,
+            serviceType: post.serviceType
+          });
           
           // If post was subscribed, we need to cancel the subscription
           if (post.status === 'subscribed' && post.subscriberId) {
@@ -116,13 +125,13 @@ export class PostExpirationService {
         
         // Handle subscription cancellations separately
         if (expiredSubscriptions.length > 0) {
-          await this.cancelExpiredSubscriptions(expiredPosts, expiredSubscriptions);
+          await this.cancelExpiredSubscriptions(expiredPosts.map(p => p.id), expiredSubscriptions);
         }
         
         // Log to system logs
         await addDoc(collection(db, this.SYSTEM_LOGS_COLLECTION), {
           type: 'auto_expire_posts',
-          expiredPostIds: expiredPosts,
+          expiredPostIds: expiredPosts.map(p => p.id),
           expiredCount: expiredPosts.length,
           processedCount,
           timestamp: new Date(),

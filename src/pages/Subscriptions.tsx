@@ -39,25 +39,31 @@ const Subscriptions: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      console.log('Active tab:', activeTab);
+      console.log('Current filters:', filters);
+      
+      const filterWithStatus = {
+        ...filters,
+        status: activeTab === 'active' ? 'active' : activeTab === 'cancelled' ? 'cancelled' : undefined
+      };
+      
+      console.log('Filter with status:', filterWithStatus);
+      
       const [subscriptionsData, usersData, postsData, statsData] = await Promise.all([
-        SubscriptionService.getAllSubscriptions({
-          ...filters,
-          status: activeTab === 'active' ? 'active' : activeTab === 'cancelled' ? 'cancelled' : undefined
-        }),
+        SubscriptionService.getAllSubscriptions(filterWithStatus),
         UserService.getUsers(),
-        PostService.getPosts(), // This will use the original method with optional filters
+        PostService.getPosts(),
         SubscriptionService.getSubscriptionStats()
       ]);
+
+      console.log('Fetched subscriptions:', subscriptionsData);
+      console.log('Stats data:', statsData);
 
       setSubscriptions(subscriptionsData);
       setUsers(usersData);
       setPosts(postsData);
       setStats(statsData);
-      
-      // Add debugging
-      console.log('Fetched posts:', postsData);
-      console.log('Posts with cost > 0:', postsData.filter(p => p.cost > 0));
-      console.log('Active posts:', postsData.filter(p => p.status === 'active'));
       
     } catch (error) {
       console.error('Error fetching subscription data:', error);

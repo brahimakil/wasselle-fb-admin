@@ -125,10 +125,21 @@ const PostExpirationMonitor: React.FC = () => {
             
             {lastResult.expiredPosts?.length > 0 && (
               <div className="mt-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Expired Posts: {lastResult.expiredPosts.slice(0, 3).join(', ')}
-                  {lastResult.expiredPosts.length > 3 && ` +${lastResult.expiredPosts.length - 3} more`}
+                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                  Expired Posts:
                 </span>
+                <div className="space-y-1">
+                  {lastResult.expiredPosts.slice(0, 3).map((post: any, index: number) => (
+                    <div key={index} className="text-xs text-gray-700 dark:text-gray-300">
+                      {typeof post === 'string' ? post : post.title}
+                    </div>
+                  ))}
+                  {lastResult.expiredPosts.length > 3 && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      +{lastResult.expiredPosts.length - 3} more
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

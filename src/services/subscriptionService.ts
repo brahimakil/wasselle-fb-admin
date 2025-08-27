@@ -247,14 +247,45 @@ export class SubscriptionService {
       const querySnapshot = await getDocs(q);
       let subscriptions: PostSubscription[] = [];
 
+      console.log('Raw subscription documents:', querySnapshot.size);
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        subscriptions.push({
-          ...data,
-          subscribedAt: data.subscribedAt.toDate(),
-          cancelledAt: data.cancelledAt?.toDate()
-        } as PostSubscription);
+        console.log('Raw subscription data:', data);
+        
+        // Check if required fields exist
+        if (!data.subscribedAt) {
+          console.warn('Missing subscribedAt field for subscription:', doc.id);
+          return;
+        }
+
+        try {
+          const subscription: PostSubscription = {
+            id: doc.id,
+            postId: data.postId || '',
+            postTitle: data.postTitle || 'Unknown Post',
+            postCost: data.postCost || 0,
+            subscriberId: data.subscriberId || '',
+            subscriberName: data.subscriberName || 'Unknown Subscriber',
+            subscriberEmail: data.subscriberEmail || '',
+            authorId: data.authorId || '',
+            authorName: data.authorName || 'Unknown Author',
+            authorEmail: data.authorEmail || '',
+            transactionId: data.transactionId || '',
+            status: data.status || 'active',
+            subscribedAt: data.subscribedAt.toDate(),
+            cancelledAt: data.cancelledAt?.toDate(),
+            cancellationReason: data.cancellationReason
+          };
+
+          subscriptions.push(subscription);
+          console.log('Processed subscription:', subscription);
+        } catch (error) {
+          console.error('Error processing subscription document:', doc.id, error);
+        }
       });
+
+      console.log('Final subscriptions array:', subscriptions);
 
       // Apply search filter
       if (filters?.search) {
@@ -265,6 +296,7 @@ export class SubscriptionService {
           sub.authorName.toLowerCase().includes(searchTerm) ||
           sub.subscriberEmail.toLowerCase().includes(searchTerm)
         );
+        console.log('Filtered subscriptions:', subscriptions);
       }
 
       return subscriptions;

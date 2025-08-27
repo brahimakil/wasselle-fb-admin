@@ -46,7 +46,8 @@ const Sidebar: React.FC = () => {
     { id: 'posts', label: 'Posts', path: '/admin/posts', icon: RocketIcon },
     { id: 'subscriptions', label: 'Subscriptions', path: '/admin/subscriptions', icon: CheckCircledIcon },
     { id: 'wallets', label: 'Wallets', path: '/admin/wallets', icon: TokensIcon },
-    { id: 'payments', label: 'Payments', path: '/admin/payments', icon: CardStackIcon },
+    { id: 'cashouts', label: 'Cashouts', path: '/admin/cashouts', icon: TokensIcon }, // Use TokensIcon (different from wallets)
+    { id: 'payment-methods', label: 'Payment Methods', path: '/admin/payment-methods', icon: CardStackIcon },
     { id: 'countries', label: 'Countries', path: '/admin/countries', icon: GlobeIcon },
     {
       id: 'vehicles',

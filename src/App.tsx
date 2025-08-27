@@ -12,9 +12,10 @@ import Users from './pages/Users';
 import Posts from './pages/Posts';
 import Subscriptions from './pages/Subscriptions';
 import Wallets from './pages/Wallets';
-import Payments from './pages/Payments';
 import Countries from './pages/Countries';
 import Vehicles from './pages/Vehicles';
+import PaymentMethods from './pages/PaymentMethods';
+import Cashouts from './pages/Cashouts';
 import { PostService } from './services/postService';
 
 function App() {
@@ -51,7 +52,8 @@ function App() {
               <Route path="posts" element={<Posts />} />
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="wallets" element={<Wallets />} />
-              <Route path="payments" element={<Payments />} />
+              <Route path="cashouts" element={<Cashouts />} />
+              <Route path="payment-methods" element={<PaymentMethods />} />
               <Route path="countries" element={<Countries />} />
               <Route path="vehicles" element={<Vehicles />} />
             </Route>

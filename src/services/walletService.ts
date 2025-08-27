@@ -21,11 +21,26 @@ export class WalletService {
   private static readonly WALLETS_COLLECTION = 'wallets';
   private static readonly TRANSACTIONS_COLLECTION = 'transactions';
 
-  // Generate unique transaction ID
-  static generateTransactionId(): string {
+  // Check if transaction ID already exists (for admin transactions)
+  static async isTransactionIdUsed(transactionId: string): Promise<boolean> {
+    try {
+      const q = query(
+        collection(db, this.TRANSACTIONS_COLLECTION),
+        where('__name__', '==', transactionId)
+      );
+      const snapshot = await getDocs(q);
+      return !snapshot.empty;
+    } catch (error) {
+      console.error('Error checking transaction ID:', error);
+      return false;
+    }
+  }
+
+  // Generate fallback transaction ID for non-recharge transactions
+  private static generateFallbackTransactionId(): string {
     const timestamp = Date.now().toString(36);
     const randomStr = Math.random().toString(36).substring(2, 15);
-    return `TXN_${timestamp}_${randomStr}`.toUpperCase();
+    return `AUTO_${timestamp}_${randomStr}`.toUpperCase();
   }
 
   // Initialize wallet for new user
@@ -76,9 +91,22 @@ export class WalletService {
   }
 
   // Add transaction and update wallet
-  static async addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  static async addTransaction(
+    transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
+    customTransactionId?: string
+  ): Promise<string> {
     try {
-      const transactionId = this.generateTransactionId();
+      // Use custom transaction ID if provided, otherwise generate fallback
+      const transactionId = customTransactionId || this.generateFallbackTransactionId();
+      
+      // Check if custom transaction ID is already used (only check if it's a custom ID)
+      if (customTransactionId) {
+        const isUsed = await this.isTransactionIdUsed(customTransactionId);
+        if (isUsed) {
+          throw new Error('Transaction ID already exists');
+        }
+      }
+
       const batch = writeBatch(db);
 
       // Ensure wallet exists first
@@ -102,15 +130,21 @@ export class WalletService {
         
         if (walletDoc.exists()) {
           const wallet = walletDoc.data() as UserWallet;
+          
+          // Check for sufficient balance for negative transactions (cashouts, payments)
+          if (transaction.amount < 0 && wallet.balance + transaction.amount < 0) {
+            throw new Error('Insufficient balance for this transaction');
+          }
+
           const updates: Partial<UserWallet> = {
-            balance: wallet.balance + transaction.amount,
+            balance: wallet.balance + transaction.amount, // This handles both positive and negative amounts
             updatedAt: new Date()
           };
 
           // Update totals based on transaction type
           switch (transaction.type) {
             case 'recharge':
-              // Recharge doesn't affect earnings/spent
+              // Recharge doesn't affect earnings/spent totals
               break;
             case 'post_earning':
               updates.totalEarnings = wallet.totalEarnings + Math.abs(transaction.amount);
@@ -135,8 +169,19 @@ export class WalletService {
     }
   }
 
-  // Recharge wallet (admin function)
-  static async rechargeWallet(userId: string, amount: number, description: string, adminId: string): Promise<string> {
+  // Recharge wallet with custom transaction ID
+  static async rechargeWallet(
+    userId: string, 
+    amount: number, 
+    description: string, 
+    adminId: string,
+    paymentMethodId?: string,
+    externalTransactionId?: string
+  ): Promise<string> {
+    if (!externalTransactionId) {
+      throw new Error('External transaction ID is required for wallet recharge');
+    }
+
     // Ensure wallet exists first
     await this.initializeWallet(userId);
     
@@ -147,11 +192,12 @@ export class WalletService {
       description,
       status: 'completed',
       paymentMethod: 'admin',
+      paymentMethodId,
       metadata: { adminId }
-    });
+    }, externalTransactionId); // Pass the external transaction ID as the primary ID
   }
 
-  // Process post purchase
+  // Process post purchase (keeps auto-generated IDs for internal transactions)
   static async processPostPurchase(buyerId: string, authorId: string, postId: string, amount: number): Promise<{ buyerTxn: string; authorTxn: string }> {
     try {
       // Check if buyer has sufficient balance
@@ -160,7 +206,7 @@ export class WalletService {
         throw new Error('Insufficient balance');
       }
 
-      // Create transactions
+      // Create transactions (these use auto-generated IDs since they're internal)
       const buyerTxnId = await this.addTransaction({
         userId: buyerId,
         type: 'post_payment',
