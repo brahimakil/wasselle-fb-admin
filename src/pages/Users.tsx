@@ -18,18 +18,16 @@ const Users: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
-    placeOfLiving: '',
+    countryId: '',
   });
-  const [homeLocations, setHomeLocations] = useState<string[]>([]);
+  const [homeLocations, setHomeLocations] = useState<Array<{id: string, name: string, flag?: string}>>([]);
   const [searchParams] = useSearchParams();
   const { user: currentAdmin } = useAuth();
 
   useEffect(() => {
     // Check for location filter from URL
     const locationParam = searchParams.get('location');
-    if (locationParam) {
-      setFilters(prev => ({ ...prev, placeOfLiving: locationParam }));
-    }
+    setFilters(prev => ({ ...prev, countryId: locationParam || '' }));
   }, [searchParams]);
 
   useEffect(() => {
@@ -75,7 +73,7 @@ const Users: React.FC = () => {
   const clearFilters = () => {
     setFilters({
       search: '',
-      placeOfLiving: '',
+      countryId: '',
       gender: undefined,
     });
   };
@@ -129,14 +127,14 @@ const Users: React.FC = () => {
 
           {/* Location Filter */}
           <select
-            value={filters.placeOfLiving}
-            onChange={(e) => handleFilterChange('placeOfLiving', e.target.value)}
+            value={filters.countryId}
+            onChange={(e) => handleFilterChange('countryId', e.target.value)}
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">All Locations</option>
+            <option value="">All Countries</option>
             {homeLocations.map((location) => (
-              <option key={location} value={location}>
-                {location}
+              <option key={location.id} value={location.id}>
+                {location.flag} {location.name}
               </option>
             ))}
           </select>

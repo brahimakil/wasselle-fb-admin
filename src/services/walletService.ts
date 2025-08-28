@@ -124,7 +124,7 @@ export class WalletService {
       batch.set(transactionRef, transactionData);
 
       // Update wallet if transaction is completed
-      if (transaction.status === 'completed') {
+      if (transaction.status === 'completed' || transaction.status === 'successful') {
         const walletRef = doc(db, this.WALLETS_COLLECTION, transaction.userId);
         const walletDoc = await getDoc(walletRef);
         
@@ -176,7 +176,8 @@ export class WalletService {
     description: string, 
     adminId: string,
     paymentMethodId?: string,
-    externalTransactionId?: string
+    externalTransactionId?: string,
+    status: 'pending' | 'successful' = 'pending' // Remove cancelled from here too
   ): Promise<string> {
     if (!externalTransactionId) {
       throw new Error('External transaction ID is required for wallet recharge');
@@ -188,12 +189,12 @@ export class WalletService {
     return await this.addTransaction({
       userId,
       type: 'recharge',
-      amount,
+      amount: status === 'successful' ? amount : 0, // Only add points if successful
       description,
-      status: 'completed',
+      status,
       paymentMethod: 'admin',
       paymentMethodId,
-      metadata: { adminId }
+      metadata: { adminId, originalAmount: amount } // Store original amount for reference
     }, externalTransactionId); // Pass the external transaction ID as the primary ID
   }
 
@@ -390,5 +391,57 @@ export class WalletService {
       });
       callback(transactions);
     });
+  }
+
+  static async updateTransactionStatus(
+    transactionId: string,
+    newStatus: 'successful' | 'cancelled'
+  ): Promise<void> {
+    try {
+      const transactionRef = doc(db, this.TRANSACTIONS_COLLECTION, transactionId);
+      const transactionDoc = await getDoc(transactionRef);
+      
+      if (!transactionDoc.exists()) {
+        throw new Error('Transaction not found');
+      }
+      
+      const transaction = transactionDoc.data() as Transaction;
+      
+      if (transaction.status !== 'pending') {
+        throw new Error('Can only update pending transactions');
+      }
+      
+      const batch = writeBatch(db);
+      
+      // Update transaction status
+      const updateData: any = {
+        status: newStatus,
+        updatedAt: new Date()
+      };
+      
+      // If changing to successful, update the amount and wallet
+      if (newStatus === 'successful' && transaction.metadata?.originalAmount) {
+        updateData.amount = transaction.metadata.originalAmount;
+        
+        // Update wallet balance
+        const walletRef = doc(db, this.WALLETS_COLLECTION, transaction.userId);
+        const walletDoc = await getDoc(walletRef);
+        
+        if (walletDoc.exists()) {
+          const wallet = walletDoc.data() as UserWallet;
+          batch.update(walletRef, {
+            balance: wallet.balance + transaction.metadata.originalAmount,
+            updatedAt: new Date()
+          });
+        }
+      }
+      
+      batch.update(transactionRef, updateData);
+      await batch.commit();
+      
+    } catch (error) {
+      console.error('Error updating transaction status:', error);
+      throw error;
+    }
   }
 }

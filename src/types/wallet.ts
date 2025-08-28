@@ -16,7 +16,7 @@ export interface Transaction {
   description: string;
   relatedPostId?: string;
   relatedUserId?: string; // For post payments/earnings
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'successful' | 'cancelled';
   paymentMethod?: 'admin' | 'stripe' | 'paypal'; // For future payment gateways
   paymentMethodId?: string; // Reference to PaymentMethod collection
   metadata?: {

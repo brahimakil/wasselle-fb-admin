@@ -68,7 +68,8 @@ export class UserService {
         fullName: userData.fullName,
         phoneNumber: userData.phoneNumber,
         dateOfBirth: userData.dateOfBirth,
-        placeOfLiving: userData.placeOfLiving,
+        countryId: userData.countryId,
+        cityId: userData.cityId,
         gender: userData.gender,
         ...imageUrls,
         isActive: false, // Default inactive
@@ -94,8 +95,8 @@ export class UserService {
       // Remove orderBy to avoid needing composite indexes
       let q = query(collection(db, this.COLLECTION_NAME));
 
-      if (filters?.placeOfLiving) {
-        q = query(q, where('placeOfLiving', '==', filters.placeOfLiving));
+      if (filters?.countryId) {
+        q = query(q, where('countryId', '==', filters.countryId));
       }
 
       if (filters?.isActive !== undefined) {
@@ -149,19 +150,37 @@ export class UserService {
   }
 
   // Get unique home locations for filtering
-  static async getHomeLocations(): Promise<string[]> {
+  static async getHomeLocations(): Promise<Array<{id: string, name: string, flag?: string}>> {
     try {
       const querySnapshot = await getDocs(collection(db, this.COLLECTION_NAME));
-      const locations = new Set<string>();
+      const countryIds = new Set<string>();
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (data.placeOfLiving) {
-          locations.add(data.placeOfLiving);
+        if (data.countryId) {
+          countryIds.add(data.countryId);
         }
       });
 
-      return Array.from(locations).sort();
+      // Get country details
+      const countries: Array<{id: string, name: string, flag?: string}> = [];
+      for (const countryId of countryIds) {
+        try {
+          const countryDoc = await getDoc(doc(db, 'countries', countryId));
+          if (countryDoc.exists()) {
+            const countryData = countryDoc.data();
+            countries.push({
+              id: countryId,
+              name: countryData.name,
+              flag: countryData.flag
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching country ${countryId}:`, error);
+        }
+      }
+
+      return countries.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       console.error('Error fetching home locations:', error);
       return [];

@@ -68,14 +68,17 @@ export class CashoutService {
   // Calculate cashout amounts with fee
   static calculateCashoutAmounts(requestedPoints: number, feePercentage: number) {
     const requestedDollars = requestedPoints; // 1 point = 1 dollar
-    const feeAmount = requestedDollars * (feePercentage / 100);
-    const finalAmount = requestedDollars - feeAmount;
-
+    
+    // Use integer arithmetic to avoid floating-point precision issues
+    const requestedCents = Math.round(requestedDollars * 100); // Convert to cents
+    const feeCents = Math.round(requestedCents * (feePercentage / 100)); // Calculate fee in cents
+    const finalCents = requestedCents - feeCents; // Subtract in cents
+    
     return {
-      requestedAmount: requestedPoints,
-      requestedDollars,
-      feeAmount: Math.round(feeAmount * 100) / 100, // Round to 2 decimal places
-      finalAmount: Math.round(finalAmount * 100) / 100 // Round to 2 decimal places
+      requestedAmount: Math.round(requestedPoints), // Ensure integer points
+      requestedDollars: requestedCents / 100,
+      feeAmount: feeCents / 100,
+      finalAmount: finalCents / 100
     };
   }
 

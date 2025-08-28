@@ -81,7 +81,7 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
         cashout.id,
         externalTransactionId.trim(),
         adminId,
-        adminNotes.trim() || undefined
+        adminNotes.trim() || ''
       );
       onSuccess();
     } catch (error: any) {

@@ -14,9 +14,15 @@ interface TransactionTableProps {
   transactions: Transaction[];
   users: User[];
   onRefresh: () => void;
+  onEditTransaction?: (transaction: Transaction) => void; // Add this prop
 }
 
-const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, users, onRefresh }) => {
+const TransactionTable: React.FC<TransactionTableProps> = ({ 
+  transactions, 
+  users, 
+  onRefresh, 
+  onEditTransaction 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -136,12 +142,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, users
               <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Amount</th>
               <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
               <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Date</th>
+              <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredTransactions.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <td colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
                   No transactions found
                 </td>
               </tr>
@@ -189,17 +196,25 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, users
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`font-semibold text-sm ${
-                        transaction.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {formatAmount(transaction.amount)} pts
-                      </span>
+                      <div>
+                        <span className={`font-semibold text-sm ${
+                          transaction.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {formatAmount(transaction.amount)} pts
+                        </span>
+                        {/* Show original amount for recharge transactions with 0 amount */}
+                        {transaction.type === 'recharge' && transaction.amount === 0 && transaction.metadata?.originalAmount && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Original: {transaction.metadata.originalAmount} pts
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
                         {getStatusIcon(transaction.status)}
                         <span className={`text-sm capitalize ${
-                          transaction.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                          transaction.status === 'completed' || transaction.status === 'successful' ? 'text-green-600 dark:text-green-400' :
                           transaction.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
                           'text-red-600 dark:text-red-400'
                         }`}>
@@ -209,6 +224,16 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, users
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                       {formatDate(transaction.createdAt)}
+                    </td>
+                    <td className="py-3 px-4">
+                      {transaction.status === 'pending' && transaction.type === 'recharge' && (
+                        <button
+                          onClick={() => onEditTransaction?.(transaction)}
+                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );

@@ -4,8 +4,9 @@ export interface User {
   fullName: string;
   phoneNumber: string;
   dateOfBirth: string;
-  placeOfLiving: string;
-  gender?: 'male' | 'female';  // Make this optional with ?
+  countryId: string; // Replace placeOfLiving with countryId
+  cityId: string; // Add cityId
+  gender?: 'male' | 'female';
   driverLicenseUrl?: string;
   passportUrl?: string;
   facePhotoUrl?: string;
@@ -30,7 +31,8 @@ export interface CreateUserData {
   fullName: string;
   phoneNumber: string;
   dateOfBirth: string;
-  placeOfLiving: string;
+  countryId: string; // Replace placeOfLiving with countryId
+  cityId: string; // Add cityId
   gender: 'male' | 'female';
   driverLicense?: File;
   passport?: File;
@@ -39,7 +41,7 @@ export interface CreateUserData {
 
 export interface UserFilters {
   search: string;
-  placeOfLiving: string;
+  countryId: string; // Replace placeOfLiving with countryId
   gender?: 'male' | 'female';
   isActive?: boolean;
   isVerified?: boolean;

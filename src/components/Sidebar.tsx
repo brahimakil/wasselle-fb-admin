@@ -29,11 +29,12 @@ import {
 import EditVehicleModal from './EditVehicleModal';
 import CreateVehicleModal from './CreateVehicleModal';
 import AutocompleteInput from './AutocompleteInput';
+import { CountryService } from '../services/countryService';
 
 const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLocationFilter, setShowLocationFilter] = useState(false);
-  const [homeLocations, setHomeLocations] = useState<string[]>([]);
+  const [homeLocations, setHomeLocations] = useState<Array<{id: string, name: string, flag?: string}>>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [showCreateVehicleModal, setShowCreateVehicleModal] = useState(false);
   const [selectedUserForVehicle, setSelectedUserForVehicle] = useState<User | null>(null);
@@ -62,16 +63,16 @@ const Sidebar: React.FC = () => {
   ];
 
   useEffect(() => {
-    const fetchHomeLocations = async () => {
+    const fetchCountries = async () => {
       try {
-        const locations = await UserService.getHomeLocations();
-        setHomeLocations(locations);
+        const countries = await UserService.getHomeLocations();
+        setHomeLocations(countries);
       } catch (error) {
-        console.error('Error fetching home locations:', error);
+        console.error('Error fetching countries:', error);
       }
     };
 
-    fetchHomeLocations();
+    fetchCountries();
   }, []);
 
   useEffect(() => {
@@ -95,8 +96,8 @@ const Sidebar: React.FC = () => {
     }
   };
 
-  const handleLocationFilter = (location: string) => {
-    navigate(`/admin/users?location=${encodeURIComponent(location)}`);
+  const handleLocationFilter = (countryId: string) => {
+    navigate(`/admin/users?location=${encodeURIComponent(countryId)}`);
   };
 
   const handleCreateVehicleSuccess = () => {
@@ -162,7 +163,7 @@ const Sidebar: React.FC = () => {
                 onClick={() => setShowLocationFilter(!showLocationFilter)}
                 className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
-                <span>User Locations</span>
+                <span>User Countries</span>
                 {showLocationFilter ? (
                   <ChevronDownIcon className="w-4 h-4" />
                 ) : (
@@ -180,12 +181,12 @@ const Sidebar: React.FC = () => {
                   </button>
                   {homeLocations.map((location) => (
                     <button
-                      key={location}
-                      onClick={() => handleLocationFilter(location)}
+                      key={location.id}
+                      onClick={() => handleLocationFilter(location.id)}
                       className="block w-full text-left px-3 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors truncate"
-                      title={location}
+                      title={`${location.flag} ${location.name}`}
                     >
-                      {location}
+                      {location.flag} {location.name}
                     </button>
                   ))}
                 </div>

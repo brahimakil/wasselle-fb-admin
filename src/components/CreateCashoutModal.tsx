@@ -102,7 +102,7 @@ const CreateCashoutModal: React.FC<CreateCashoutModalProps> = ({
       return;
     }
 
-    const pointsToRequest = parseFloat(requestedPoints);
+    const pointsToRequest = Math.round(parseFloat(requestedPoints));
     if (isNaN(pointsToRequest) || pointsToRequest <= 0) {
       setError('Please enter a valid amount');
       return;

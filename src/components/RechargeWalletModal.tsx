@@ -30,6 +30,7 @@ const RechargeWalletModal: React.FC<RechargeWalletModalProps> = ({
   const [error, setError] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [transactionIdStatus, setTransactionIdStatus] = useState<'checking' | 'valid' | 'duplicate' | null>(null);
+  const [status, setStatus] = useState<'pending' | 'successful'>('pending');
 
   const selectedUser = users.find(user => user.id === selectedUserId);
   const selectedPaymentMethod = paymentMethods.find(method => method.id === paymentMethodId);
@@ -111,7 +112,8 @@ const RechargeWalletModal: React.FC<RechargeWalletModalProps> = ({
         description,
         adminId,
         paymentMethodId,
-        externalTransactionId.trim() // This becomes the primary transaction ID
+        externalTransactionId.trim(),
+        status
       );
       onSuccess();
     } catch (error: any) {
@@ -206,6 +208,22 @@ const RechargeWalletModal: React.FC<RechargeWalletModalProps> = ({
                 No active payment methods found. Please add a payment method first.
               </p>
             )}
+          </div>
+
+          {/* Status Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Status *
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'pending' | 'successful')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="pending">⏳ Pending</option>
+              <option value="successful">✅ Successful</option>
+            </select>
           </div>
 
           {/* Transaction ID */}

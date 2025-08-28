@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserService } from '../services/userService';
+import { CountryService } from '../services/countryService';
 import type { CreateUserData } from '../types/user';
 import { Cross2Icon, UploadIcon, PersonIcon } from '@radix-ui/react-icons';
 import AutocompleteInput from './AutocompleteInput';
@@ -17,25 +18,43 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ onClose, onSuccess, a
     fullName: '',
     phoneNumber: '',
     dateOfBirth: '',
-    placeOfLiving: '',
+    countryId: '',
+    cityId: '',
     gender: 'male',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string }>({});
-  const [placeSuggestions, setPlaceSuggestions] = useState<string[]>([]);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
 
   useEffect(() => {
-    const loadPlaceSuggestions = async () => {
+    const loadCountries = async () => {
       try {
-        const places = await UserService.getUniquePlacesOfLiving();
-        setPlaceSuggestions(places);
+        const countriesData = await CountryService.getActiveCountries();
+        setCountries(countriesData);
       } catch (error) {
-        console.error('Error loading place suggestions:', error);
+        console.error('Error loading countries:', error);
       }
     };
-    loadPlaceSuggestions();
+    loadCountries();
   }, []);
+
+  useEffect(() => {
+    const loadCities = async () => {
+      if (formData.countryId) {
+        try {
+          const citiesData = await CountryService.getCitiesByCountry(formData.countryId);
+          setCities(citiesData);
+        } catch (error) {
+          console.error('Error loading cities:', error);
+        }
+      } else {
+        setCities([]);
+      }
+    };
+    loadCities();
+  }, [formData.countryId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,7 +94,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ onClose, onSuccess, a
     
     // Validation
     if (!formData.email || !formData.password || !formData.fullName || !formData.phoneNumber || 
-        !formData.dateOfBirth || !formData.placeOfLiving) {
+        !formData.dateOfBirth || !formData.countryId || !formData.cityId) {
       setError('Please fill in all required fields');
       return;
     }
@@ -201,17 +220,45 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ onClose, onSuccess, a
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Place of Living *
+                  Country *
                 </label>
-                <AutocompleteInput
-                  value={formData.placeOfLiving}
-                  onChange={(value) => setFormData(prev => ({ ...prev, placeOfLiving: value }))}
-                  suggestions={placeSuggestions}
-                  placeholder="e.g., New York, USA"
+                <select
+                  name="countryId"
+                  value={formData.countryId}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, countryId: e.target.value, cityId: '' }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  name="placeOfLiving"
                   required
-                />
+                >
+                  <option value="">Select Country</option>
+                  {countries.map((country) => (
+                    <option key={country.id} value={country.id}>
+                      {country.flag} {country.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  City *
+                </label>
+                <select
+                  name="cityId"
+                  value={formData.cityId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cityId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  disabled={!formData.countryId}
+                >
+                  <option value="">Select City</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

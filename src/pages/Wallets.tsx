@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { WalletService } from '../services/walletService';
 import { UserService } from '../services/userService';
-import type { UserWallet, Transaction, WalletStats } from '../types/wallet';
+import type { UserWallet, Transaction, WalletFilters, WalletStats } from '../types/wallet';
 import type { User } from '../types/user';
 import WalletCard from '../components/WalletCard';
 import TransactionTable from '../components/TransactionTable';
 import WalletStatsCards from '../components/WalletStatsCards';
 import RechargeWalletModal from '../components/RechargeWalletModal';
+import UpdateTransactionModal from '../components/UpdateTransactionModal';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   PlusIcon, 
@@ -26,6 +27,8 @@ const Wallets: React.FC = () => {
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const { user: currentAdmin } = useAuth();
 
   useEffect(() => {
@@ -80,6 +83,17 @@ const Wallets: React.FC = () => {
     setShowRechargeModal(false);
     setSelectedUserId('');
     await fetchData(); // Refresh data
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowUpdateModal(true);
+  };
+
+  const handleUpdateSuccess = () => {
+    setShowUpdateModal(false);
+    setSelectedTransaction(null);
+    fetchData(); // Refresh data
   };
 
   if (loading) {
@@ -243,7 +257,7 @@ const Wallets: React.FC = () => {
             <TransactionTable 
               transactions={transactions} 
               users={users}
-              onRefresh={fetchData}
+              onEditTransaction={handleEditTransaction}
             />
           )}
         </div>
@@ -260,6 +274,14 @@ const Wallets: React.FC = () => {
           }}
           onSuccess={handleRecharge}
           adminId={currentAdmin?.uid || ''}
+        />
+      )}
+
+      {showUpdateModal && selectedTransaction && (
+        <UpdateTransactionModal
+          transaction={selectedTransaction}
+          onClose={() => setShowUpdateModal(false)}
+          onSuccess={handleUpdateSuccess}
         />
       )}
     </div>
