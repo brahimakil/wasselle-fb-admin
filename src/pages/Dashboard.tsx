@@ -166,11 +166,9 @@ const Dashboard: React.FC = () => {
             <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Total Revenue</p>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{formatCurrency(stats.totalRevenue)}</p>
-                  <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                    Admin earned: {formatCurrency(stats.adminEarnings)}
-                  </p>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Admin earned</p>
+                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{formatCurrency(stats.adminEarnings)}</p>
+                
                 </div>
                 <BarChartIcon className="w-8 h-8 text-green-600" />
               </div>

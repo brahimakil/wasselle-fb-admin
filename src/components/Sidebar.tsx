@@ -106,7 +106,7 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
+      isCollapsed ? 'w-20' : 'w-64'
     }`}>
       <div className="flex flex-col h-full">
         {/* Logo and Toggle */}
@@ -118,10 +118,12 @@ const Sidebar: React.FC = () => {
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+              isCollapsed ? 'mx-auto' : ''
+            }`}
           >
             {isCollapsed ? (
-              <HamburgerMenuIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <HamburgerMenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             ) : (
               <Cross1Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             )}
@@ -130,20 +132,21 @@ const Sidebar: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
-          <ul className="space-y-2">
+          <ul className={`space-y-2 ${isCollapsed ? 'space-y-3' : ''}`}>
             {navItems.map((item) => (
               <li key={item.id}>
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center px-3 py-2 rounded-lg transition-colors group ${
+                    `flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2'} rounded-lg transition-colors group ${
                       isActive
                         ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`
                   }
+                  title={isCollapsed ? item.label : undefined}
                 >
-                  <item.icon className={`w-5 h-5 ${isCollapsed ? '' : 'mr-3'}`} />
+                  <item.icon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
                   {!isCollapsed && (
                     <span className="text-sm font-medium">{item.label}</span>
                   )}
@@ -152,7 +155,7 @@ const Sidebar: React.FC = () => {
             ))}
           </ul>
 
-          {/* Home Locations Filter */}
+          {/* Home Locations Filter - only show when not collapsed */}
           {!isCollapsed && homeLocations.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
@@ -195,9 +198,10 @@ const Sidebar: React.FC = () => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-2 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+            className={`flex items-center w-full ${isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2'} text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group`}
+            title={isCollapsed ? 'Logout' : undefined}
           >
-            <ExitIcon className={`w-5 h-5 ${isCollapsed ? '' : 'mr-3'}`} />
+            <ExitIcon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
             {!isCollapsed && (
               <span className="text-sm font-medium">Logout</span>
             )}

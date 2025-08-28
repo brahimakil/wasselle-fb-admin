@@ -87,10 +87,11 @@ const Posts: React.FC = () => {
   };
 
   // Stats calculations
-  const activePostsCount = posts.filter(p => p.isActive && !p.isCompleted).length;
-  const completedPostsCount = posts.filter(p => p.isCompleted).length;
+  const activePostsCount = posts.filter(p => p.status === 'active' || p.status === 'subscribed').length;
+  const completedPostsCount = posts.filter(p => p.status === 'completed').length;
   const todayPostsCount = posts.filter(p => {
     const today = new Date().toISOString().split('T')[0];
+    return p.departureDate === today && (p.status === 'active' || p.status === 'subscribed');
     return p.departureDate === today && p.isActive;
   }).length;
 
