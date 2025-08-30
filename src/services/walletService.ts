@@ -411,6 +411,16 @@ export class WalletService {
         throw new Error('Can only update pending transactions');
       }
       
+      // Get original amount from metadata or root level
+      const originalAmount = transaction.metadata?.originalAmount || transaction.originalAmount;
+      
+      if (!originalAmount) {
+        throw new Error('Original amount not found in transaction');
+      }
+      
+      // Ensure wallet exists before updating
+      await this.initializeWallet(transaction.userId);
+      
       const batch = writeBatch(db);
       
       // Update transaction status
@@ -420,8 +430,8 @@ export class WalletService {
       };
       
       // If changing to successful, update the amount and wallet
-      if (newStatus === 'successful' && transaction.metadata?.originalAmount) {
-        updateData.amount = transaction.metadata.originalAmount;
+      if (newStatus === 'successful') {
+        updateData.amount = originalAmount;
         
         // Update wallet balance
         const walletRef = doc(db, this.WALLETS_COLLECTION, transaction.userId);
@@ -429,15 +439,26 @@ export class WalletService {
         
         if (walletDoc.exists()) {
           const wallet = walletDoc.data() as UserWallet;
+          console.log('🔍 Updating wallet:', {
+            userId: transaction.userId,
+            currentBalance: wallet.balance,
+            addingAmount: originalAmount,
+            newBalance: wallet.balance + originalAmount
+          });
+          
           batch.update(walletRef, {
-            balance: wallet.balance + transaction.metadata.originalAmount,
+            balance: wallet.balance + originalAmount,
             updatedAt: new Date()
           });
+        } else {
+          console.log('❌ Wallet not found after initialization');
         }
       }
       
       batch.update(transactionRef, updateData);
       await batch.commit();
+      
+      console.log('✅ Transaction status updated successfully');
       
     } catch (error) {
       console.error('Error updating transaction status:', error);

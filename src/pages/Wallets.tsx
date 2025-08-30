@@ -73,8 +73,8 @@ const Wallets: React.FC = () => {
     
     const searchLower = searchTerm.toLowerCase();
     return (
-      user.fullName.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower) ||
+      (user.fullName || '').toLowerCase().includes(searchLower) ||
+      (user.email || '').toLowerCase().includes(searchLower) ||
       wallet.userId.toLowerCase().includes(searchLower)
     );
   });
