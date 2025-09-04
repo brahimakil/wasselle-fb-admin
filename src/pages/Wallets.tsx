@@ -168,50 +168,121 @@ const Wallets: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Wallets</h3>
                   <div className="space-y-3">
-                    {wallets.slice(0, 5).map((wallet) => {
-                      const user = getUserById(wallet.userId);
-                      return user ? (
-                        <div key={wallet.userId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{user.fullName}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                    {wallets
+                      .sort((a, b) => b.balance - a.balance) // Sort by balance descending
+                      .slice(0, 5)
+                      .map((wallet) => {
+                        const user = getUserById(wallet.userId);
+                        return user ? (
+                          <div key={wallet.userId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">{user.fullName}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600 dark:text-green-400">{wallet.balance} pts</p>
+                              <p className="text-xs text-gray-500">≈ ${wallet.balance}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600 dark:text-green-400">{wallet.balance} pts</p>
-                            <p className="text-xs text-gray-500">Balance</p>
-                          </div>
-                        </div>
-                      ) : null;
-                    })}
+                        ) : null;
+                      })}
                   </div>
                 </div>
 
-                {/* Recent Transactions */}
+                {/* Recent Activity */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                   <div className="space-y-3">
-                    {transactions.slice(0, 5).map((transaction) => {
-                      const user = getUserById(transaction.userId);
-                      return (
-                        <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white text-sm">
-                              {transaction.description}
-                            </p>
-                            <p className="text-xs text-gray-500">{user?.fullName || 'Unknown User'}</p>
+                    {transactions
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Sort by date descending
+                      .slice(0, 6) // Show 6 instead of 5
+                      .map((transaction) => {
+                        const user = getUserById(transaction.userId);
+                        const getTransactionIcon = () => {
+                          switch (transaction.type) {
+                            case 'recharge': return '💰';
+                            case 'cashout': return '💸';
+                            case 'subscription': return '📝';
+                            case 'admin_adjustment': return '⚙️';
+                            default: return '💳';
+                          }
+                        };
+                        
+                        const getStatusColor = () => {
+                          switch (transaction.status) {
+                            case 'completed': return 'text-green-600';
+                            case 'successful': return 'text-green-600';
+                            case 'pending': return 'text-yellow-600';
+                            case 'cancelled': return 'text-red-600';
+                            default: return 'text-gray-600';
+                          }
+                        };
+
+                        return (
+                          <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-lg">{getTransactionIcon()}</span>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                  {user?.fullName || 'Unknown User'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {transaction.type} • {transaction.status}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className={`font-bold text-sm ${
+                                transaction.amount > 0 ? 'text-green-600' : 
+                                transaction.amount < 0 ? 'text-red-600' : 'text-gray-600'
+                              }`}>
+                                {transaction.amount > 0 ? '+' : ''}{transaction.amount} pts
+                              </p>
+                              <p className={`text-xs ${getStatusColor()}`}>
+                                {transaction.status}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm ${
-                              transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {transaction.amount > 0 ? '+' : ''}{transaction.amount} pts
-                            </p>
-                            <p className="text-xs text-gray-500">{transaction.type}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
+                </div>
+              </div>
+
+              {/* Transaction Summary */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Transaction Summary (Today)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    const todayTransactions = transactions.filter(t => 
+                      new Date(t.createdAt) >= today
+                    );
+                    
+                    const recharges = todayTransactions.filter(t => t.type === 'recharge' && (t.status === 'successful' || t.status === 'completed'));
+                    const cashouts = todayTransactions.filter(t => t.type === 'cashout' && (t.status === 'successful' || t.status === 'completed'));
+                    const pending = todayTransactions.filter(t => t.status === 'pending');
+                    
+                    const rechargeTotal = recharges.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+                    const cashoutTotal = cashouts.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+                    
+                    return [
+                      { label: 'Recharges', value: recharges.length, amount: `+${rechargeTotal} pts`, color: 'text-green-600' },
+                      { label: 'Cashouts', value: cashouts.length, amount: `-${cashoutTotal} pts`, color: 'text-red-600' },
+                      { label: 'Pending', value: pending.length, amount: '', color: 'text-yellow-600' },
+                      { label: 'Total Transactions', value: todayTransactions.length, amount: '', color: 'text-blue-600' }
+                    ];
+                  })().map((item, index) => (
+                    <div key={index} className="text-center">
+                      <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{item.label}</p>
+                      {item.amount && (
+                        <p className={`text-xs font-medium ${item.color}`}>{item.amount}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

@@ -116,124 +116,92 @@ export class CashoutService {
       // Calculate amounts
       const amounts = this.calculateCashoutAmounts(data.requestedAmount, data.feePercentage);
 
-      const cashoutRequest = {
+      // Create ONLY the transaction (remove the cashoutRequests document creation)
+      const transactionId = await WalletService.addTransaction({
         userId: data.userId,
-        userName,
-        userEmail,
-        requestedAmount: data.requestedAmount,
-        feePercentage: data.feePercentage,
-        feeAmount: amounts.feeAmount,
-        finalAmount: amounts.finalAmount,
+        type: 'cashout',
+        amount: finalStatus === 'completed' ? -data.requestedAmount : 0,
+        description: `Cashout via ${paymentMethodName} (Fee: ${data.feePercentage}%)`,
+        status: finalStatus === 'completed' ? 'completed' : 'pending',
+        paymentMethod: 'admin',
         paymentMethodId: data.paymentMethodId,
-        paymentMethodName,
-        externalTransactionId: data.externalTransactionId || null,
-        status: finalStatus,  // Use the selected status
-        notes: data.notes || null,
-        adminId,
-        adminNotes: null,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        processedAt: finalStatus === 'completed' ? Timestamp.now() : null
-      };
+        metadata: { 
+          adminId,
+          userName,           // Add this
+          userEmail,          // Add this  
+          paymentMethodName,  // Add this
+          feePercentage: data.feePercentage,
+          feeAmount: amounts.feeAmount,
+          finalAmount: amounts.finalAmount,
+          requestedAmount: data.requestedAmount,  // Add this
+          notes: data.notes,
+          adminNotes: null,
+          processedAt: finalStatus === 'completed' ? new Date() : null
+        }
+      }, data.externalTransactionId);
 
-      const docRef = await addDoc(collection(db, this.CASHOUTS_COLLECTION), cashoutRequest);
-
-      // If status is completed, deduct points immediately
-      if (finalStatus === 'completed') {
-        await WalletService.addTransaction({
-          userId: data.userId,
-          type: 'cashout',
-          amount: -data.requestedAmount,
-          description: `Cashout via ${paymentMethodName} (Fee: ${data.feePercentage}%)`,
-          status: 'completed',
-          paymentMethod: 'admin',
-          paymentMethodId: data.paymentMethodId,
-          metadata: { 
-            adminId,
-            cashoutId: docRef.id,
-            feePercentage: data.feePercentage,
-            feeAmount: amounts.feeAmount,
-            finalAmount: amounts.finalAmount
-          }
-        }, data.externalTransactionId);
-      }
-
-      return docRef.id;
+      return transactionId;
     } catch (error) {
       console.error('Error creating cashout request:', error);
       throw error;
     }
   }
 
-  // Process cashout (deduct from wallet)
+  // Process cashout (deduct from wallet) - FIXED
   static async processCashout(
-    cashoutId: string, 
+    transactionId: string,
     externalTransactionId: string, 
     adminId: string,
     adminNotes?: string
   ): Promise<void> {
     try {
-      const cashoutRef = doc(db, this.CASHOUTS_COLLECTION, cashoutId);
-      const cashoutDoc = await getDoc(cashoutRef);
+      // Read from transactions collection instead
+      const transactionRef = doc(db, 'transactions', transactionId);
+      const transactionDoc = await getDoc(transactionRef);
 
-      if (!cashoutDoc.exists()) {
-        throw new Error('Cashout request not found');
+      if (!transactionDoc.exists()) {
+        throw new Error('Cashout transaction not found');
       }
 
-      const cashout = cashoutDoc.data() as CashoutRequest;
+      const transaction = transactionDoc.data();
 
-      if (cashout.status !== 'pending' && cashout.status !== 'processing') {
-        throw new Error('Cashout request is not in pending or processing status');
+      if (transaction.status !== 'pending') {
+        throw new Error('Cashout transaction is not in pending status');
       }
 
-      // Check if external transaction ID is already used by others (exclude current cashout)
-      if (externalTransactionId && externalTransactionId !== cashout.externalTransactionId) {
-        const isUsed = await this.isTransactionIdUsedByOthers(externalTransactionId, cashoutId);
+      // Check if external transaction ID is already used by others (exclude current transaction)
+      if (externalTransactionId && externalTransactionId !== transactionId) {
+        const isUsed = await WalletService.isTransactionIdUsed(externalTransactionId);
         if (isUsed) {
           throw new Error('This transaction ID has already been used');
         }
       }
 
-      const batch = writeBatch(db);
+      // Update transaction status to completed and deduct points
+      await WalletService.updateTransactionStatus(transactionId, 'completed');  // Use 'completed'
 
-      // Create or update wallet transaction
-      await WalletService.addTransaction({
-        userId: cashout.userId,
-        type: 'cashout',
-        amount: -cashout.requestedAmount,
-        description: `Cashout via ${cashout.paymentMethodName} (Fee: ${cashout.feePercentage}%)`,
-        status: 'completed',
-        paymentMethod: 'admin',
-        paymentMethodId: cashout.paymentMethodId,
-        metadata: { 
-          adminId,
-          cashoutId,
-          feePercentage: cashout.feePercentage,
-          feeAmount: cashout.feeAmount,
-          finalAmount: cashout.finalAmount
-        }
-      }, externalTransactionId);
+      // Update admin notes in metadata if provided
+      if (adminNotes) {
+        await updateDoc(transactionRef, {
+          'metadata.adminNotes': adminNotes,
+          updatedAt: new Date()
+        });
+      }
 
-      // Update cashout request
-      batch.update(cashoutRef, {
-        status: 'completed',
-        externalTransactionId,
-        adminNotes,
-        updatedAt: Timestamp.now(),
-        processedAt: Timestamp.now()
-      });
-
-      await batch.commit();
     } catch (error) {
       console.error('Error processing cashout:', error);
       throw error;
     }
   }
 
-  // Get all cashout requests
+  // FASTEST - Get all cashout requests using batch queries
   static async getCashoutRequests(filters?: CashoutFilters): Promise<CashoutRequest[]> {
     try {
-      let q = query(collection(db, this.CASHOUTS_COLLECTION), orderBy('createdAt', 'desc'));
+      let q = query(
+        collection(db, 'transactions'),
+        where('type', '==', 'cashout'),
+        orderBy('createdAt', 'desc')
+      );
 
       if (filters?.userId) {
         q = query(q, where('userId', '==', filters.userId));
@@ -248,16 +216,87 @@ export class CashoutService {
       }
 
       const snapshot = await getDocs(q);
+      
+      // Collect unique IDs
+      const userIds = [...new Set(snapshot.docs.map(doc => doc.data().userId))];
+      const paymentMethodIds = [...new Set(snapshot.docs.map(doc => doc.data().paymentMethodId).filter(Boolean))];
+
+      // Use Firestore 'in' queries for batch fetching (max 10 per query)
+      const fetchUsers = async (ids: string[]) => {
+        const chunks = [];
+        for (let i = 0; i < ids.length; i += 10) {
+          chunks.push(ids.slice(i, i + 10));
+        }
+        
+        const userPromises = chunks.map(chunk => 
+          getDocs(query(collection(db, 'users'), where('__name__', 'in', chunk)))
+        );
+        
+        const results = await Promise.all(userPromises);
+        const usersMap = new Map();
+        results.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            usersMap.set(doc.id, doc.data());
+          });
+        });
+        return usersMap;
+      };
+
+      const fetchPaymentMethods = async (ids: string[]) => {
+        const chunks = [];
+        for (let i = 0; i < ids.length; i += 10) {
+          chunks.push(ids.slice(i, i + 10));
+        }
+        
+        const paymentPromises = chunks.map(chunk => 
+          getDocs(query(collection(db, 'paymentMethods'), where('__name__', 'in', chunk)))
+        );
+        
+        const results = await Promise.all(paymentPromises);
+        const paymentsMap = new Map();
+        results.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            paymentsMap.set(doc.id, doc.data());
+          });
+        });
+        return paymentsMap;
+      };
+
+      // Fetch all data in parallel
+      const [usersMap, paymentsMap] = await Promise.all([
+        userIds.length > 0 ? fetchUsers(userIds) : new Map(),
+        paymentMethodIds.length > 0 ? fetchPaymentMethods(paymentMethodIds) : new Map()
+      ]);
+
+      // Build results
       let cashouts: CashoutRequest[] = [];
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const metadata = data.metadata || {};
+        
+        const userData = usersMap.get(data.userId);
+        const paymentData = paymentsMap.get(data.paymentMethodId);
+        
         cashouts.push({
-          id: doc.id,
-          ...data,
+          id: docSnap.id,
+          userId: data.userId,
+          userName: metadata.userName || userData?.fullName || 'Unknown',
+          userEmail: metadata.userEmail || userData?.email || 'Unknown',
+          requestedAmount: metadata.requestedAmount || Math.abs(data.amount),
+          feePercentage: metadata.feePercentage || 0,
+          feeAmount: metadata.feeAmount || 0,
+          finalAmount: metadata.finalAmount || 0,
+          paymentMethodId: data.paymentMethodId,
+          paymentMethodName: metadata.paymentMethodName || paymentData?.name || 'Unknown',
+          externalTransactionId: docSnap.id,
+          status: data.status,
+          notes: metadata.notes,
+          adminId: metadata.adminId,
+          adminNotes: metadata.adminNotes,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
-          processedAt: data.processedAt?.toDate()
+          processedAt: metadata.processedAt || (data.status === 'completed' ? data.updatedAt?.toDate() : null)
         } as CashoutRequest);
       });
 
@@ -280,34 +319,39 @@ export class CashoutService {
     }
   }
 
-  // Get cashout statistics
+  // Get cashout statistics (read from transactions)
   static async getCashoutStats(): Promise<CashoutStats> {
     try {
-      const snapshot = await getDocs(collection(db, this.CASHOUTS_COLLECTION));
+      const q = query(
+        collection(db, 'transactions'),
+        where('type', '==', 'cashout')
+      );
+      const snapshot = await getDocs(q);
       
       let totalRequests = 0;
       let pendingRequests = 0;
       let completedRequests = 0;
       let totalCashedOut = 0;
-      let adminEarnings = 0;  // Changed from totalFees
+      let adminEarnings = 0;
       let todayRequests = 0;
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       snapshot.forEach((doc) => {
-        const cashout = doc.data() as CashoutRequest;
+        const transaction = doc.data();
+        const metadata = transaction.metadata || {};
         totalRequests++;
 
-        if (cashout.status === 'pending' || cashout.status === 'processing') {
+        if (transaction.status === 'pending' || transaction.status === 'processing') {
           pendingRequests++;
-        } else if (cashout.status === 'completed') {
+        } else if (transaction.status === 'completed') {
           completedRequests++;
-          totalCashedOut += cashout.finalAmount;
-          adminEarnings += cashout.feeAmount;  // Changed from totalFees
+          totalCashedOut += metadata.finalAmount || 0;
+          adminEarnings += metadata.feeAmount || 0;
         }
 
-        if (cashout.createdAt.toDate() >= today) {
+        if (transaction.createdAt?.toDate() >= today) {
           todayRequests++;
         }
       });
@@ -317,7 +361,7 @@ export class CashoutService {
         pendingRequests,
         completedRequests,
         totalCashedOut: Math.round(totalCashedOut * 100) / 100,
-        adminEarnings: Math.round(adminEarnings * 100) / 100,  // Changed from totalFees
+        adminEarnings: Math.round(adminEarnings * 100) / 100,
         todayRequests
       };
     } catch (error) {
@@ -327,98 +371,40 @@ export class CashoutService {
         pendingRequests: 0,
         completedRequests: 0,
         totalCashedOut: 0,
-        adminEarnings: 0,  // Changed from totalFees
+        adminEarnings: 0,
         todayRequests: 0
       };
     }
   }
 
-  // Update cashout status
+  // Update cashout status (update transaction)
   static async updateCashoutStatus(
-    cashoutId: string, 
+    transactionId: string, 
     newStatus: CashoutRequest['status'],
     adminId: string,
     adminNotes?: string
   ): Promise<void> {
     try {
-      const cashoutRef = doc(db, this.CASHOUTS_COLLECTION, cashoutId);
-      const cashoutDoc = await getDoc(cashoutRef);
-
-      if (!cashoutDoc.exists()) {
-        throw new Error('Cashout request not found');
-      }
-
-      const cashout = cashoutDoc.data() as CashoutRequest;
-      const oldStatus = cashout.status;
-
-      // Prevent changing from cancelled status
-      if (oldStatus === 'cancelled') {
-        throw new Error('Cannot change status of a cancelled cashout request');
-      }
-
-      // Prevent setting to same status
-      if (oldStatus === newStatus) {
-        throw new Error(`Cashout is already ${newStatus}`);
-      }
-
-      const batch = writeBatch(db);
-
-      // Handle point transactions based on status transitions
-      if (oldStatus === 'pending' && newStatus === 'completed') {
-        // Deduct points from user
-        await WalletService.addTransaction({
-          userId: cashout.userId,
-          type: 'cashout',
-          amount: -cashout.requestedAmount,
-          description: `Cashout via ${cashout.paymentMethodName} (Fee: ${cashout.feePercentage}%)`,
-          status: 'completed',
-          paymentMethod: 'admin',
-          paymentMethodId: cashout.paymentMethodId,
-          metadata: { 
-            adminId,
-            cashoutId,
-            feePercentage: cashout.feePercentage,
-            feeAmount: cashout.feeAmount,
-            finalAmount: cashout.finalAmount,
-            statusTransition: `${oldStatus} → ${newStatus}`
-          }
-        });
-      } else if (oldStatus === 'completed' && newStatus === 'cancelled') {
-        // Add points back to user (reverse the deduction)
-        await WalletService.addTransaction({
-          userId: cashout.userId,
-          type: 'admin_adjustment',
-          amount: cashout.requestedAmount, // Positive amount to add back
-          description: `Cashout cancellation refund - ${cashout.paymentMethodName}`,
-          status: 'completed',
-          paymentMethod: 'admin',
-          metadata: { 
-            adminId,
-            cashoutId,
-            originalFeePercentage: cashout.feePercentage,
-            originalFeeAmount: cashout.feeAmount,
-            originalFinalAmount: cashout.finalAmount,
-            statusTransition: `${oldStatus} → ${newStatus}`,
-            refundReason: 'Cashout cancelled after completion'
-          }
-        });
-      }
-      // For pending → cancelled, no point transaction needed
-
-      // Update cashout document
-      const updateData: any = {
-        status: newStatus,
-        adminNotes: adminNotes || cashout.adminNotes,
-        updatedAt: Timestamp.now()
-      };
-
+      // Map cashout status to transaction status
       if (newStatus === 'completed') {
-        updateData.processedAt = Timestamp.now();
+        await WalletService.updateTransactionStatus(transactionId, 'completed');
+      } else if (newStatus === 'cancelled') {
+        await WalletService.updateTransactionStatus(transactionId, 'cancelled');
       }
-
-      batch.update(cashoutRef, updateData);
-      await batch.commit();
-
+      
+      // Update admin notes in metadata
+      if (adminNotes) {
+        const transactionRef = doc(db, 'transactions', transactionId);
+        const transactionDoc = await getDoc(transactionRef);
+        
+        if (transactionDoc.exists()) {
+          const currentMetadata = transactionDoc.data().metadata || {};
+          await updateDoc(transactionRef, {
+            'metadata.adminNotes': adminNotes,
+            updatedAt: new Date()
+          });
+        }
+      }
     } catch (error) {
       console.error('Error updating cashout status:', error);
       throw error;

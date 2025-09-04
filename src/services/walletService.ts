@@ -395,7 +395,7 @@ export class WalletService {
 
   static async updateTransactionStatus(
     transactionId: string,
-    newStatus: 'successful' | 'cancelled'
+    newStatus: 'successful' | 'cancelled' | 'completed'
   ): Promise<void> {
     try {
       const transactionRef = doc(db, this.TRANSACTIONS_COLLECTION, transactionId);
@@ -407,12 +407,22 @@ export class WalletService {
       
       const transaction = transactionDoc.data() as Transaction;
       
+      // Allow completed cashouts to be cancelled (for refunds), but keep restriction for recharges
       if (transaction.status !== 'pending') {
-        throw new Error('Can only update pending transactions');
+        if (!(transaction.type === 'cashout' && transaction.status === 'completed' && newStatus === 'cancelled')) {
+          throw new Error('Can only update pending transactions');
+        }
       }
       
-      // Get original amount from metadata or root level
-      const originalAmount = transaction.metadata?.originalAmount || transaction.originalAmount;
+      // Get original amount from different possible locations
+      let originalAmount = transaction.metadata?.originalAmount || 
+                          transaction.originalAmount || 
+                          transaction.metadata?.requestedAmount;
+      
+      // For cashout transactions, use absolute value of current amount if no other amount found
+      if (!originalAmount && transaction.type === 'cashout') {
+        originalAmount = Math.abs(transaction.amount);
+      }
       
       if (!originalAmount) {
         throw new Error('Original amount not found in transaction');
@@ -429,9 +439,11 @@ export class WalletService {
         updatedAt: new Date()
       };
       
-      // If changing to successful, update the amount and wallet
-      if (newStatus === 'successful') {
-        updateData.amount = originalAmount;
+      // Handle wallet updates based on transaction type and status change
+      if (newStatus === 'successful' || newStatus === 'completed') {
+        // For cashouts, amount should be negative
+        const finalAmount = transaction.type === 'cashout' ? -Math.abs(originalAmount) : originalAmount;
+        updateData.amount = finalAmount;
         
         // Update wallet balance
         const walletRef = doc(db, this.WALLETS_COLLECTION, transaction.userId);
@@ -439,26 +451,31 @@ export class WalletService {
         
         if (walletDoc.exists()) {
           const wallet = walletDoc.data() as UserWallet;
-          console.log('🔍 Updating wallet:', {
-            userId: transaction.userId,
-            currentBalance: wallet.balance,
-            addingAmount: originalAmount,
-            newBalance: wallet.balance + originalAmount
-          });
-          
           batch.update(walletRef, {
-            balance: wallet.balance + originalAmount,
+            balance: wallet.balance + finalAmount,
             updatedAt: new Date()
           });
-        } else {
-          console.log('❌ Wallet not found after initialization');
+        }
+      } else if (newStatus === 'cancelled' && transaction.type === 'cashout' && transaction.status === 'completed') {
+        // Refund cashout: add points back to user
+        const refundAmount = Math.abs(originalAmount); // Positive amount to add back
+        updateData.amount = 0; // Set transaction amount to 0
+        
+        // Update wallet balance
+        const walletRef = doc(db, this.WALLETS_COLLECTION, transaction.userId);
+        const walletDoc = await getDoc(walletRef);
+        
+        if (walletDoc.exists()) {
+          const wallet = walletDoc.data() as UserWallet;
+          batch.update(walletRef, {
+            balance: wallet.balance + refundAmount, // Add points back
+            updatedAt: new Date()
+          });
         }
       }
       
       batch.update(transactionRef, updateData);
       await batch.commit();
-      
-      console.log('✅ Transaction status updated successfully');
       
     } catch (error) {
       console.error('Error updating transaction status:', error);
