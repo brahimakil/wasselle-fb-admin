@@ -7,6 +7,7 @@ import {
   EyeClosedIcon,
   TrashIcon
 } from '@radix-ui/react-icons';
+import { useAuth } from '../contexts/AuthContext';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -18,11 +19,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, userName, onUpdate }
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const { user: currentAdmin } = useAuth();
 
   const handleStatusUpdate = async (isActive: boolean) => {
     try {
       setLoading(true);
-      await VehicleService.updateVehicleStatus(vehicle.id, isActive);
+      await VehicleService.updateVehicleStatus(vehicle.id, isActive, currentAdmin?.uid || '');
       onUpdate();
     } catch (error) {
       console.error('Error updating vehicle status:', error);

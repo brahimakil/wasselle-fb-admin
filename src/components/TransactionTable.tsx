@@ -166,7 +166,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                           {transaction.description}
                         </p>
                         {/* Show transaction type indicator */}
-                        {transaction.id.startsWith('AUTO_') && (
+                        {transaction.id && transaction.id.startsWith('AUTO_') && (
                           <span className="inline-block mt-1 text-xs px-1 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded">
                             System
                           </span>

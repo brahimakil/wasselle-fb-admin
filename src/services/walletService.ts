@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { UserWallet, Transaction, WalletFilters, WalletStats } from '../types/wallet';
+import { NotificationService } from './notificationService';
 
 export class WalletService {
   private static readonly WALLETS_COLLECTION = 'wallets';
@@ -476,6 +477,62 @@ export class WalletService {
       
       batch.update(transactionRef, updateData);
       await batch.commit();
+      
+      // Add notification for successful/completed transactions
+      if (newStatus === 'successful' || newStatus === 'completed') {
+        if (transaction.type === 'recharge') {
+          await NotificationService.createNotification({
+            userId: transaction.userId,
+            type: 'wallet',
+            title: '💰 Points Added to Your Wallet',
+            message: `${originalAmount} points have been successfully added to your wallet. Your new balance is ready to use!`,
+            data: { 
+              amount: originalAmount, 
+              type: 'points_added',
+              transactionId: transactionId
+            }
+          });
+        } else if (transaction.type === 'cashout') {
+          await NotificationService.createNotification({
+            userId: transaction.userId,
+            type: 'wallet',
+            title: '✅ Cashout Approved',
+            message: `Your cashout of ${Math.abs(originalAmount)} points has been approved and processed. The money will be sent to your payment method.`,
+            data: { 
+              amount: Math.abs(originalAmount), 
+              type: 'cashout_processed',
+              status: 'approved',
+              transactionId: transactionId
+            }
+          });
+        }
+      } else if (newStatus === 'cancelled') {
+        if (transaction.type === 'recharge') {
+          await NotificationService.createNotification({
+            userId: transaction.userId,
+            type: 'wallet',
+            title: '❌ Recharge Cancelled',
+            message: `Your points purchase request has been cancelled. No points were added to your wallet.`,
+            data: { 
+              amount: originalAmount, 
+              type: 'recharge_cancelled',
+              transactionId: transactionId
+            }
+          });
+        } else if (transaction.type === 'cashout') {
+          await NotificationService.createNotification({
+            userId: transaction.userId,
+            type: 'wallet',
+            title: '❌ Cashout Rejected',
+            message: `Your cashout request has been rejected. Please contact support for details.`,
+            data: { 
+              amount: Math.abs(originalAmount), 
+              type: 'cashout_rejected',
+              transactionId: transactionId
+            }
+          });
+        }
+      }
       
     } catch (error) {
       console.error('Error updating transaction status:', error);

@@ -15,6 +15,7 @@ import {
 } from '@radix-ui/react-icons';
 import EditUserModal from './EditUserModal';
 import UserCancellationStats from './UserCancellationStats';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserCardProps {
   user: User;
@@ -25,13 +26,31 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const { user: currentAdmin } = useAuth();
 
   const handleStatusUpdate = async (updates: Partial<Pick<User, 'isActive' | 'isVerified' | 'isBanned'>>) => {
     try {
       setLoading(true);
-      console.log('UserCard - User ID:', user.id);
-      console.log('UserCard - Updates:', updates);
-      await UserService.updateUserStatus(user.id, updates);
+      const adminId = currentAdmin?.uid || '';
+      
+      // Handle different types of updates with notifications
+      if ('isActive' in updates) {
+        await UserService.updateUserStatus(user.id, updates.isActive!, adminId);
+      } else if ('isVerified' in updates) {
+        await UserService.updateUserVerification(user.id, updates.isVerified!, adminId);
+      } else if ('isBanned' in updates) {
+        if (updates.isBanned) {
+          // For banning, we need a reason - for now use a default
+          await UserService.banUser(user.id, 'Banned by admin', adminId);
+        } else {
+          // For unbanning, use the general update method
+          await UserService.updateUser(user.id, updates);
+        }
+      } else {
+        // For other updates, use the general method
+        await UserService.updateUser(user.id, updates);
+      }
+      
       onUpdate();
     } catch (error) {
       console.error('Error updating user status:', error);

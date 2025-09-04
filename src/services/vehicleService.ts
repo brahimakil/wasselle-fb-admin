@@ -19,6 +19,7 @@ import {
 } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import type { Vehicle, CreateVehicleData, VehicleFilters } from '../types/vehicle';
+import { NotificationService } from './notificationService';
 
 export class VehicleService {
   private static readonly COLLECTION_NAME = 'vehicles';
@@ -134,19 +135,37 @@ export class VehicleService {
   }
 
   // Update vehicle status
-  static async updateVehicleStatus(vehicleId: string, isActive: boolean): Promise<void> {
+  static async updateVehicleStatus(vehicleId: string, isActive: boolean, adminId: string): Promise<void> {
     try {
       const vehicleRef = doc(db, this.COLLECTION_NAME, vehicleId);
-      
       const vehicleDoc = await getDoc(vehicleRef);
+      
       if (!vehicleDoc.exists()) {
-        throw new Error(`Vehicle document not found: ${vehicleId}`);
+        throw new Error('Vehicle not found');
       }
+      
+      const vehicle = vehicleDoc.data();
       
       await updateDoc(vehicleRef, {
         isActive,
         updatedAt: new Date()
       });
+
+      // Add notification
+      if (isActive) {
+        await NotificationService.createNotification({
+          userId: vehicle.userId,
+          type: 'vehicle',
+          title: '🚗 Vehicle Approved',
+          message: `Your vehicle ${vehicle.model} (${vehicle.licensePlate}) has been approved by an admin. You can now use it in your posts.`,
+          data: { 
+            type: 'vehicle_approved',
+            vehicleModel: vehicle.model,
+            licensePlate: vehicle.licensePlate,
+            adminId
+          }
+        });
+      }
     } catch (error) {
       console.error('Error updating vehicle status:', error);
       throw error;

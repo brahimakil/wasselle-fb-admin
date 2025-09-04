@@ -25,6 +25,7 @@ import { auth, db, storage } from '../firebase';
 import type { User, CreateUserData, UserFilters } from '../types/user';
 import { WalletService } from './walletService';
 import type { Transaction, UserWallet } from '../types/wallet';
+import { NotificationService } from './notificationService';
 
 export class UserService {
   private static readonly COLLECTION_NAME = 'users';
@@ -207,50 +208,77 @@ export class UserService {
     }
   }
 
-  // Update user status with ban details
-  static async updateUserStatus(
-    userId: string, 
-    updates: Partial<Pick<User, 'isActive' | 'isVerified' | 'isBanned'>> & { 
-      banReason?: string; 
-      banDate?: Date 
-    }
-  ): Promise<void> {
+  // Update user status (activate/deactivate)
+  static async updateUserStatus(userId: string, isActive: boolean, adminId: string): Promise<void> {
     try {
-      console.log('Attempting to update user with ID:', userId);
-      console.log('Collection name:', this.COLLECTION_NAME);
-      console.log('Updates:', updates);
-      
       const userRef = doc(db, this.COLLECTION_NAME, userId);
-      console.log('Document path:', `${this.COLLECTION_NAME}/${userId}`);
-      
-      // Check if document exists first
-      const userDoc = await getDoc(userRef);
-      console.log('Document exists:', userDoc.exists());
-      
-      if (!userDoc.exists()) {
-        console.log('Document data:', userDoc.data());
-        throw new Error(`User document not found at path: ${this.COLLECTION_NAME}/${userId}`);
-      }
-      
-      console.log('Current document data:', userDoc.data());
-      
-      // Prepare update data
-      const updateData: any = {
-        ...updates,
+      await updateDoc(userRef, {
+        isActive,
         updatedAt: new Date()
-      };
+      });
 
-      // If unbanning, clear ban fields
-      if (updates.isBanned === false) {
-        updateData.banReason = null;
-        updateData.banDate = null;
+      // Add notification
+      if (isActive) {
+        await NotificationService.createNotification({
+          userId,
+          type: 'account',
+          title: '🎉 Account Activated',
+          message: 'Congratulations! Your account has been activated by an admin. You can now create posts and subscribe to other posts.',
+          data: { type: 'account_activated', adminId }
+        });
       }
-      
-      await updateDoc(userRef, updateData);
-      
-      console.log('Update successful');
     } catch (error) {
       console.error('Error updating user status:', error);
+      throw error;
+    }
+  }
+
+  // Update user verification status
+  static async updateUserVerification(userId: string, isVerified: boolean, adminId: string): Promise<void> {
+    try {
+      const userRef = doc(db, this.COLLECTION_NAME, userId);
+      await updateDoc(userRef, {
+        isVerified,
+        updatedAt: new Date()
+      });
+
+      // Add notification
+      if (isVerified) {
+        await NotificationService.createNotification({
+          userId,
+          type: 'account',
+          title: '✅ Account Verified',
+          message: 'Your account has been verified! You now have a verification badge on your profile.',
+          data: { type: 'account_verified', adminId }
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user verification:', error);
+      throw error;
+    }
+  }
+
+  // Ban user
+  static async banUser(userId: string, reason: string, adminId: string): Promise<void> {
+    try {
+      const userRef = doc(db, this.COLLECTION_NAME, userId);
+      await updateDoc(userRef, {
+        isBanned: true,
+        banReason: reason,
+        banDate: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Add notification
+      await NotificationService.createNotification({
+        userId,
+        type: 'account',
+        title: '🚫 Account Banned',
+        message: `Your account has been banned by an admin.${reason ? ` Reason: ${reason}` : ' Contact support for more information.'}`,
+        data: { type: 'account_banned', reason, adminId }
+      });
+    } catch (error) {
+      console.error('Error banning user:', error);
       throw error;
     }
   }
