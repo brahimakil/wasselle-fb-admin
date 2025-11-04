@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Posts from './pages/Posts';
+import LiveTaxi from './pages/LiveTaxi';
 import Subscriptions from './pages/Subscriptions';
 import Wallets from './pages/Wallets';
 import Countries from './pages/Countries';
@@ -50,6 +51,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="users" element={<Users />} />
               <Route path="posts" element={<Posts />} />
+              <Route path="live-taxi" element={<LiveTaxi />} />
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="wallets" element={<Wallets />} />
               <Route path="cashouts" element={<Cashouts />} />

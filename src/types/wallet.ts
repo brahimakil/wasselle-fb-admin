@@ -11,15 +11,22 @@ export interface UserWallet {
 export interface Transaction {
   id: string; // This will be the external transaction ID from admin
   userId: string;
-  type: 'recharge' | 'post_payment' | 'post_earning' | 'cashout' | 'admin_adjustment';
+  type: 'recharge' | 'post_payment' | 'post_earning' | 'cashout' | 'admin_adjustment' | 'live_taxi_payment';
   amount: number; // Positive for credits, negative for debits
   description: string;
   relatedPostId?: string;
   relatedUserId?: string; // For post payments/earnings
-  status: 'pending' | 'successful' | 'cancelled';
+  status: 'pending' | 'successful' | 'cancelled' | 'completed';
   paymentMethod?: 'admin' | 'stripe' | 'paypal'; // For future payment gateways
   paymentMethodId?: string; // Reference to PaymentMethod collection
   metadata?: {
+    livePostId?: string;
+    driverId?: string;
+    driverName?: string;
+    fromUserId?: string;
+    toUserId?: string;
+    fromCity?: string;
+    toCity?: string;
     [key: string]: any;
   };
   createdAt: Date;

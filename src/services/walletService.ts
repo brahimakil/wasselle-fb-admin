@@ -282,8 +282,9 @@ export class WalletService {
         const data = doc.data();
         transactions.push({
           ...data,
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate()
+          id: doc.id,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)
         } as Transaction);
       });
 
@@ -328,13 +329,14 @@ export class WalletService {
       let pendingTransactions = 0;
 
       transactionsSnapshot.forEach((doc) => {
-        const transaction = doc.data() as Transaction;
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
         
-        if (transaction.createdAt.toDate() >= today) {
+        if (createdAt >= today) {
           todayTransactions++;
         }
         
-        if (transaction.status === 'pending') {
+        if (data.status === 'pending') {
           pendingTransactions++;
         }
       });
@@ -386,8 +388,9 @@ export class WalletService {
         const data = doc.data();
         transactions.push({
           ...data,
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate()
+          id: doc.id,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)
         } as Transaction);
       });
       callback(transactions);

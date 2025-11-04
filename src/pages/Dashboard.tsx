@@ -282,6 +282,41 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Live Taxi Stats */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">🚕</span>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Live Taxi Overview</h2>
+              </div>
+              <button
+                onClick={() => navigate('/admin/live-taxi')}
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-1"
+              >
+                <span>View All</span>
+                <ArrowRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">-</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Active Requests</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">-</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Completed Today</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">-</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Revenue</p>
+              </div>
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">-</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Applications</p>
+              </div>
+            </div>
+          </div>
+
           {/* Post Expiration Monitor */}
           <PostExpirationMonitor />
         </>

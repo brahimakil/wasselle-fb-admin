@@ -39,6 +39,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
       case 'post_payment':
       case 'cashout':
         return <ArrowDownIcon className="w-4 h-4 text-red-500" />;
+      case 'live_taxi_payment':
+        return <span className="text-base">🚕</span>;
       case 'admin_adjustment':
         return <ClockIcon className="w-4 h-4 text-blue-500" />;
       default:
@@ -49,8 +51,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   const getStatusIcon = (status: Transaction['status']) => {
     switch (status) {
       case 'completed':
+      case 'successful':
         return <CheckCircledIcon className="w-4 h-4 text-green-500" />;
-      case 'failed':
       case 'cancelled':
         return <CrossCircledIcon className="w-4 h-4 text-red-500" />;
       case 'pending':
@@ -114,6 +116,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           <option value="recharge">Recharge</option>
           <option value="post_payment">Post Payment</option>
           <option value="post_earning">Post Earning</option>
+          <option value="live_taxi_payment">🚕 Live Taxi Payment</option>
           <option value="cashout">Cashout</option>
           <option value="admin_adjustment">Admin Adjustment</option>
         </select>

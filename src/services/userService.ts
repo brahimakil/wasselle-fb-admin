@@ -19,7 +19,8 @@ import {
 } from 'firebase/storage';
 import { 
   createUserWithEmailAndPassword,
-  updatePassword 
+  updatePassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, db, storage } from '../firebase';
 import type { User, CreateUserData, UserFilters } from '../types/user';
@@ -318,6 +319,16 @@ export class UserService {
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;
+    }
+  }
+
+  // Send password reset email to user
+  static async sendPasswordResetToUser(email: string): Promise<void> {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      throw new Error('Failed to send password reset email');
     }
   }
 
