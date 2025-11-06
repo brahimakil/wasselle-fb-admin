@@ -50,6 +50,15 @@ export class LiveTaxiService {
         );
       }
 
+      // 🆕 Filter by serviceType
+      if (filters?.serviceType) {
+        q = query(
+          collection(db, this.LIVE_TAXI_POSTS_COLLECTION),
+          where('serviceType', '==', filters.serviceType),
+          orderBy('createdAt', 'desc')
+        );
+      }
+
       if (filters?.countryId) {
         q = query(
           collection(db, this.LIVE_TAXI_POSTS_COLLECTION),
@@ -80,6 +89,16 @@ export class LiveTaxiService {
         } as LiveTaxiPost;
       });
 
+      // 🆕 Filter out expired posts by default (unless showExpired is true)
+      const now = new Date();
+      if (!filters?.showExpired) {
+        posts = posts.filter(post => 
+          post.status === 'completed' || 
+          post.status === 'cancelled' || 
+          post.expiresAt > now
+        );
+      }
+
       // Apply additional filters that can't be done in Firestore query
       if (filters?.cityId) {
         posts = posts.filter(
@@ -94,7 +113,9 @@ export class LiveTaxiService {
             post.userName.toLowerCase().includes(searchLower) ||
             post.fromCityName.toLowerCase().includes(searchLower) ||
             post.toCityName.toLowerCase().includes(searchLower) ||
-            post.acceptedDriverName?.toLowerCase().includes(searchLower)
+            post.acceptedDriverName?.toLowerCase().includes(searchLower) ||
+            post.userPhone?.toLowerCase().includes(searchLower) ||
+            post.contactPhone?.toLowerCase().includes(searchLower)
         );
       }
 
@@ -209,40 +230,57 @@ export class LiveTaxiService {
   // Get live taxi statistics
   static async getLiveTaxiStats(): Promise<LiveTaxiStats> {
     try {
-      const posts = await this.getLiveTaxiPosts();
+      // Get all posts including expired ones for accurate stats
+      const posts = await this.getLiveTaxiPosts({ showExpired: true });
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const activePosts = posts.filter(p => p.status === 'waiting').length;
+      // Active posts = waiting OR accepted (not expired)
+      const activePosts = posts.filter(p => 
+        (p.status === 'waiting' || p.status === 'accepted') && 
+        new Date(p.expiresAt) > new Date()
+      ).length;
+      
       const completedTotal = posts.filter(p => p.status === 'completed').length;
       const completedToday = posts.filter(
         p => p.status === 'completed' && p.completedAt && p.completedAt >= today
       ).length;
       const cancelledTotal = posts.filter(p => p.status === 'cancelled').length;
 
-      // Get total revenue from transactions
-      const transactionsQuery = query(
-        collection(db, this.TRANSACTIONS_COLLECTION),
-        where('type', '==', 'live_taxi_payment')
-      );
-      const transactionsSnapshot = await getDocs(transactionsQuery);
-      
+      // Calculate total revenue from completed posts
+      const completedPosts = posts.filter(p => p.status === 'completed');
       let totalRevenue = 0;
-      transactionsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.amount > 0) {
-          totalRevenue += data.amount;
-        }
-      });
+      
+      // Try to get revenue from transactions first
+      try {
+        const transactionsQuery = query(
+          collection(db, this.TRANSACTIONS_COLLECTION),
+          where('type', '==', 'live_taxi_payment')
+        );
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+        
+        transactionsSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.amount > 0) {
+            totalRevenue += data.amount;
+          }
+        });
+      } catch (error) {
+        console.log('No live_taxi_payment transactions found, calculating from completed posts');
+      }
+      
+      // If no transactions, calculate from completed posts' offerPrice
+      if (totalRevenue === 0 && completedPosts.length > 0) {
+        totalRevenue = completedPosts.reduce((sum, p) => sum + (p.offerPrice || 0), 0);
+      }
 
       // Get total applications
       const applicationsSnapshot = await getDocs(
         collection(db, this.LIVE_TAXI_APPLICATIONS_COLLECTION)
       );
 
-      const completedPosts = posts.filter(p => p.status === 'completed');
       const averagePrice = completedPosts.length > 0
-        ? completedPosts.reduce((sum, p) => sum + p.offerPrice, 0) / completedPosts.length
+        ? completedPosts.reduce((sum, p) => sum + (p.offerPrice || 0), 0) / completedPosts.length
         : 0;
 
       return {

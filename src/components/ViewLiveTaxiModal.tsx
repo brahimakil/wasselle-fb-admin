@@ -62,9 +62,19 @@ const ViewLiveTaxiModal: React.FC<ViewLiveTaxiModalProps> = ({ post, onClose }) 
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Post ID</p>
               <p className="font-mono text-sm text-gray-900 dark:text-white">{post.id}</p>
             </div>
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(post.status)}`}>
-              {post.status.toUpperCase()}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* 🆕 Service Type Badge */}
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                (post.serviceType || 'taxi') === 'taxi' 
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+              }`}>
+                {(post.serviceType || 'taxi') === 'taxi' ? '🚕 TAXI' : '📦 DELIVERY'}
+              </span>
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(post.status)}`}>
+                {post.status.toUpperCase()}
+              </span>
+            </div>
           </div>
 
           {/* Route */}
@@ -84,6 +94,65 @@ const ViewLiveTaxiModal: React.FC<ViewLiveTaxiModalProps> = ({ post, onClose }) 
               </div>
             </div>
           </div>
+
+          {/* 🆕 GPS Coordinates (if available) */}
+          {(post.pickupLocation || post.destinationLocation) && (
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <span>📍</span> GPS Coordinates
+              </h3>
+              <div className="space-y-3">
+                {post.pickupLocation && (
+                  <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">🟢 Pickup Location</p>
+                      <a
+                        href={`https://www.google.com/maps?q=${post.pickupLocation.latitude},${post.pickupLocation.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                      >
+                        <span>📍</span>
+                        View on Map
+                      </a>
+                    </div>
+                    <p className="text-sm text-gray-900 dark:text-white font-mono mb-1">
+                      {post.pickupLocation.latitude.toFixed(6)}, {post.pickupLocation.longitude.toFixed(6)}
+                    </p>
+                    {post.pickupLocation.address && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        📌 {post.pickupLocation.address}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {post.destinationLocation && (
+                  <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase">🔴 Destination Location</p>
+                      <a
+                        href={`https://www.google.com/maps?q=${post.destinationLocation.latitude},${post.destinationLocation.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                      >
+                        <span>📍</span>
+                        View on Map
+                      </a>
+                    </div>
+                    <p className="text-sm text-gray-900 dark:text-white font-mono mb-1">
+                      {post.destinationLocation.latitude.toFixed(6)}, {post.destinationLocation.longitude.toFixed(6)}
+                    </p>
+                    {post.destinationLocation.address && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        📌 {post.destinationLocation.address}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Price */}
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">

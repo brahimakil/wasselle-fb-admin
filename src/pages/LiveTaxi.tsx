@@ -68,9 +68,9 @@ const LiveTaxi: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="text-4xl">🚕</div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Live Taxi Management</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Live Posts Management (Taxi/Delivery)</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Monitor and manage live taxi ride requests and driver applications
+                Monitor and manage real-time ride and delivery requests with driver applications
               </p>
             </div>
           </div>
@@ -213,7 +213,7 @@ const LiveTaxi: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
           {/* Search */}
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -225,6 +225,17 @@ const LiveTaxi: React.FC = () => {
               className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
+          {/* Service Type Filter */}
+          <select
+            value={filters.serviceType || ''}
+            onChange={(e) => handleFilterChange('serviceType', e.target.value || undefined)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Services</option>
+            <option value="taxi">🚕 Taxi</option>
+            <option value="delivery">📦 Delivery</option>
+          </select>
 
           {/* Status Filter */}
           <select

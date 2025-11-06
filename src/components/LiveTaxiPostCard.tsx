@@ -71,6 +71,35 @@ const LiveTaxiPostCard: React.FC<LiveTaxiPostCardProps> = ({ post, onUpdate }) =
   };
 
   const isExpired = new Date(post.expiresAt) < new Date();
+  
+  // Calculate time remaining
+  const getTimeRemaining = () => {
+    const now = new Date();
+    const diff = new Date(post.expiresAt).getTime() - now.getTime();
+    
+    if (diff <= 0) return 'EXPIRED';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
+  };
+  
+  // Get service type badge color
+  const getServiceTypeBadge = () => {
+    // Default to 'taxi' if serviceType is missing (for backward compatibility)
+    const serviceType = post.serviceType || 'taxi';
+    if (serviceType === 'taxi') {
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+    }
+    return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+  };
+  
+  // Get service type display text
+  const getServiceTypeText = () => {
+    const serviceType = post.serviceType || 'taxi';
+    return serviceType === 'taxi' ? '🚕 TAXI' : '📦 DELIVERY';
+  };
 
   return (
     <>
@@ -78,13 +107,20 @@ const LiveTaxiPostCard: React.FC<LiveTaxiPostCardProps> = ({ post, onUpdate }) =
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {/* 🆕 Service Type Badge */}
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getServiceTypeBadge()}`}>
+                {getServiceTypeText()}
+              </span>
+              
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {post.fromCityName} → {post.toCityName}
               </h3>
+              
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(post.status)}`}>
                 {post.status.toUpperCase()}
               </span>
+              
               {isExpired && post.status === 'waiting' && (
                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
                   EXPIRED
@@ -150,6 +186,12 @@ const LiveTaxiPostCard: React.FC<LiveTaxiPostCardProps> = ({ post, onUpdate }) =
               <p className="text-gray-900 dark:text-white font-medium">
                 {formatTime(post.expiresAt)}
               </p>
+              {/* 🆕 Time remaining countdown */}
+              {post.status === 'waiting' && (
+                <p className={`text-xs font-semibold ${isExpired ? 'text-red-600' : 'text-blue-600'}`}>
+                  {getTimeRemaining()}
+                </p>
+              )}
             </div>
           </div>
         </div>

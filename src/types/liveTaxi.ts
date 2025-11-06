@@ -17,6 +17,21 @@ export interface LiveTaxiPost {
   toCountryId: string;
   toCountryName: string;
   
+  // 🆕 Service Type (CRITICAL - REQUIRED)
+  serviceType: 'taxi' | 'delivery';
+  
+  // 🆕 GPS Coordinates (OPTIONAL but recommended)
+  pickupLocation?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  destinationLocation?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  
   // Pricing & Contact
   offerPrice: number;
   contactPhone?: string;
@@ -70,11 +85,13 @@ export interface LiveTaxiPostWithApplications extends LiveTaxiPost {
 export interface LiveTaxiFilters {
   search?: string;
   status?: 'waiting' | 'accepted' | 'completed' | 'cancelled';
+  serviceType?: 'taxi' | 'delivery';  // 🆕 Filter by service type
   countryId?: string;
   cityId?: string;
   userId?: string;
   startDate?: string;
   endDate?: string;
+  showExpired?: boolean;  // 🆕 Show/hide expired posts
 }
 
 export interface LiveTaxiStats {

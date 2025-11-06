@@ -44,10 +44,10 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard', icon: HomeIcon },
     { id: 'users', label: 'Users', path: '/admin/users', icon: PersonIcon },
-    { id: 'posts', label: 'Posts', path: '/admin/posts', icon: RocketIcon },
+    // { id: 'posts', label: 'Posts (Deprecated)', path: '/admin/posts', icon: RocketIcon },
     { 
       id: 'live-taxi', 
-      label: 'Live Taxi', 
+      label: 'Live Posts (Taxi/Delivery)', 
       path: '/admin/live-taxi', 
       icon: ({ className }) => <span className={className}>🚕</span>
     },
