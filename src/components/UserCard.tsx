@@ -11,7 +11,8 @@ import {
   EnvelopeClosedIcon,
   MobileIcon,
   HomeIcon,
-  GlobeIcon
+  GlobeIcon,
+  Cross1Icon
 } from '@radix-ui/react-icons';
 import EditUserModal from './EditUserModal';
 import UserCancellationStats from './UserCancellationStats';
@@ -26,6 +27,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; title: string } | null>(null);
   const { user: currentAdmin } = useAuth();
 
   const handleStatusUpdate = async (updates: Partial<Pick<User, 'isActive' | 'isVerified' | 'isBanned'>>) => {
@@ -144,19 +146,45 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
                   {user.driverLicenseUrl && (
                     <div>
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Driver License</label>
-                      <img src={user.driverLicenseUrl} alt="Driver License" className="mt-1 w-full h-24 object-cover rounded" />
+                      <img 
+                        src={user.driverLicenseUrl} 
+                        alt="Driver License" 
+                        className="mt-1 w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setSelectedImage({ url: user.driverLicenseUrl!, title: 'Driver License' })}
+                      />
                     </div>
                   )}
                   {user.passportUrl && (
                     <div>
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Passport</label>
-                      <img src={user.passportUrl} alt="Passport" className="mt-1 w-full h-24 object-cover rounded" />
+                      <img 
+                        src={user.passportUrl} 
+                        alt="Passport" 
+                        className="mt-1 w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setSelectedImage({ url: user.passportUrl!, title: 'Passport' })}
+                      />
                     </div>
                   )}
                   {user.facePhotoUrl && (
                     <div>
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Face Photo</label>
-                      <img src={user.facePhotoUrl} alt="Face Photo" className="mt-1 w-full h-24 object-cover rounded" />
+                      <img 
+                        src={user.facePhotoUrl} 
+                        alt="Face Photo" 
+                        className="mt-1 w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setSelectedImage({ url: user.facePhotoUrl!, title: 'Face Photo' })}
+                      />
+                    </div>
+                  )}
+                  {user.idSelfieUrl && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">ID Selfie 🆕</label>
+                      <img 
+                        src={user.idSelfieUrl} 
+                        alt="ID Selfie" 
+                        className="mt-1 w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity border-2 border-blue-500" 
+                        onClick={() => setSelectedImage({ url: user.idSelfieUrl!, title: 'ID Selfie Verification' })}
+                      />
                     </div>
                   )}
                 </div>
@@ -266,6 +294,32 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
             onUpdate();
           }}
         />
+      )}
+
+      {/* Image Modal Viewer */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh]">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white dark:bg-gray-800 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10"
+            >
+              <Cross1Icon className="w-6 h-6 text-gray-800 dark:text-gray-200" />
+            </button>
+            <div className="text-center mb-2">
+              <h3 className="text-xl font-semibold text-white">{selectedImage.title}</h3>
+            </div>
+            <img 
+              src={selectedImage.url} 
+              alt={selectedImage.title}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -10,6 +10,7 @@ export interface User {
   driverLicenseUrl?: string;
   passportUrl?: string;
   facePhotoUrl?: string;
+  idSelfieUrl?: string; // NEW: ID Selfie Verification
   liveLocation?: {
     latitude: number;
     longitude: number;
