@@ -17,18 +17,27 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
   const [status, setStatus] = useState<'successful' | 'cancelled'>(
     transaction.status === 'pending' ? 'successful' : transaction.status as 'successful' | 'cancelled'
   );
+  const [amount, setAmount] = useState<number>(transaction.metadata?.originalAmount || 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const originalAmount = transaction.metadata?.originalAmount || 0;
+  const isRechargeTransaction = transaction.type === 'recharge';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate amount for recharge transactions
+    if (isRechargeTransaction && amount <= 0) {
+      setError('Amount must be greater than 0');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await WalletService.updateTransactionStatus(transaction.id, status);
+      await WalletService.updateTransactionStatus(transaction.id, status, amount);
       onSuccess();
     } catch (error: any) {
       setError(error.message || 'Failed to update transaction');
@@ -66,7 +75,13 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
               <span className="text-sm font-mono text-gray-900 dark:text-white">{transaction.id}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Amount:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                {transaction.type}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Original Amount:</span>
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
                 {originalAmount} pts
               </span>
@@ -78,6 +93,28 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Amount Input - Only for recharge transactions */}
+          {isRechargeTransaction && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Points Amount *
+              </label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                min="1"
+                step="1"
+                placeholder={`Original: ${originalAmount}`}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                💡 Adjust the amount if user paid differently than requested
+              </p>
+            </div>
+          )}
 
           {/* Status Selection */}
           <div>
@@ -95,7 +132,7 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
             </select>
             {status === 'successful' && (
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                ✓ {originalAmount} points will be added to user's wallet
+                ✓ {isRechargeTransaction ? amount : originalAmount} points will be added to user's wallet
               </p>
             )}
             {status === 'cancelled' && (

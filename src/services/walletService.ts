@@ -399,7 +399,8 @@ export class WalletService {
 
   static async updateTransactionStatus(
     transactionId: string,
-    newStatus: 'successful' | 'cancelled' | 'completed'
+    newStatus: 'successful' | 'cancelled' | 'completed',
+    customAmount?: number
   ): Promise<void> {
     try {
       const transactionRef = doc(db, this.TRANSACTIONS_COLLECTION, transactionId);
@@ -430,6 +431,11 @@ export class WalletService {
       
       if (!originalAmount) {
         throw new Error('Original amount not found in transaction');
+      }
+
+      // Use custom amount if provided (for admin adjustments) and it's a recharge transaction
+      if (customAmount && customAmount > 0 && transaction.type === 'recharge') {
+        originalAmount = customAmount;
       }
       
       // Ensure wallet exists before updating

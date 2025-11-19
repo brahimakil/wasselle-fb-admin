@@ -20,7 +20,9 @@ import {
 import { 
   createUserWithEmailAndPassword,
   updatePassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import { auth, db, storage } from '../firebase';
 import type { User, CreateUserData, UserFilters } from '../types/user';
@@ -88,6 +90,29 @@ export class UserService {
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
+    }
+  }
+
+  // Generate random password
+  // Reset user password via Firebase Cloud Function (uses Admin SDK)
+  static async resetUserPassword(userId: string, userEmail: string, newPassword: string, adminId: string): Promise<void> {
+    try {
+      // Import Firebase Functions
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      
+      // Call the Cloud Function
+      const resetPassword = httpsCallable(functions, 'resetUserPassword');
+      const result = await resetPassword({
+        userId,
+        newPassword,
+        adminId
+      });
+
+      console.log('Password reset result:', result.data);
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      throw new Error(error.message || 'Failed to reset password');
     }
   }
 

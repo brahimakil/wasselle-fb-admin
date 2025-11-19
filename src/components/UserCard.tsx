@@ -281,6 +281,28 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
           >
             Edit
           </button>
+
+          <button
+            onClick={async () => {
+              if (confirm(`Reset password for ${user.fullName}?\n\nThe password will be reset to: APPLE1515`)) {
+                try {
+                  setLoading(true);
+                  await UserService.resetUserPassword(user.id, user.email, 'APPLE1515', currentAdmin?.uid || '');
+                  alert(`Password reset successfully!\n\nUser: ${user.fullName}\nEmail: ${user.email}\nNew Password: APPLE1515`);
+                  onUpdate();
+                } catch (error: any) {
+                  alert(`Error: ${error.message}`);
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
+            disabled={loading}
+            className="px-3 py-1 rounded-lg text-xs font-medium bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/20 dark:text-purple-400 transition-colors"
+            title="Reset user password"
+          >
+            Reset Password
+          </button>
         </div>
       </div>
 
