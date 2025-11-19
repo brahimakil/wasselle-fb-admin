@@ -133,12 +133,16 @@ export class UserService {
       // Apply search filter on client side
       let finalUsers = users;
       if (filters?.search) {
-        const searchTerm = filters.search.toLowerCase();
-        finalUsers = users.filter(user => 
-          user.fullName.toLowerCase().includes(searchTerm) ||
-          user.email.toLowerCase().includes(searchTerm) ||
-          user.phoneNumber.includes(searchTerm)
-        );
+        const searchTerm = filters.search.toLowerCase().trim();
+        finalUsers = users.filter(user => {
+          const fullName = (user.fullName || '').toLowerCase();
+          const email = (user.email || '').toLowerCase();
+          const phoneNumber = (user.phoneNumber || '');
+          
+          return fullName.includes(searchTerm) ||
+                 email.includes(searchTerm) ||
+                 phoneNumber.includes(searchTerm);
+        });
       }
 
       // Sort by createdAt on client side instead of Firestore

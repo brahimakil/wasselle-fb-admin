@@ -22,7 +22,7 @@ import { VehicleService } from './vehicleService';
 export class PostService {
   private static readonly POSTS_COLLECTION = 'posts';
   private static readonly CANCELLATIONS_COLLECTION = 'userCancellations';
-  private static readonly MAX_CANCELLATIONS_PER_MONTH = 5;
+  private static readonly MAX_CANCELLATIONS_PER_MONTH = 3;
 
   // Create a new post
   static async createPost(postData: CreatePostData, adminId: string): Promise<string> {

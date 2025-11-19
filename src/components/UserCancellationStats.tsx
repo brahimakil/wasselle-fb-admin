@@ -40,15 +40,15 @@ const UserCancellationStats: React.FC<UserCancellationStatsProps> = ({ userId, u
       </h5>
       {stats ? (
         <div className="space-y-1 text-sm">
-          <p className={`${stats.cancellationCount > 5 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
-            <strong>Cancellations:</strong> {stats.cancellationCount}/5
+          <p className={`${stats.cancellationCount >= 3 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+            <strong>Cancellations:</strong> {stats.cancellationCount}/3
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             <strong>Last:</strong> {stats.lastCancellation.toLocaleDateString()}
           </p>
-          {stats.cancellationCount > 5 && (
+          {stats.cancellationCount >= 3 && (
             <p className="text-red-600 dark:text-red-400 text-xs font-medium">
-              ⚠️ Limit exceeded - User should be banned
+              ⚠️ Limit exceeded - User account banned
             </p>
           )}
         </div>
