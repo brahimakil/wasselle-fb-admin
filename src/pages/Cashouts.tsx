@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CashoutService } from '../services/cashoutService';
 import { UserService } from '../services/userService';
 import { PaymentMethodService } from '../services/paymentMethodService';
+import { SettingsService } from '../services/settingsService';
 import type { CashoutRequest, CashoutFilters, CashoutStats } from '../types/cashout';
 import type { User } from '../types/user';
 import type { PaymentMethod } from '../types/paymentMethod';
@@ -13,9 +14,13 @@ import {
   PlusIcon, 
   MagnifyingGlassIcon,
   ReloadIcon,
-  TokensIcon
+  TokensIcon,
+  GearIcon,
+  CheckIcon
 } from '@radix-ui/react-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Cashouts: React.FC = () => {
   const [cashouts, setCashouts] = useState<CashoutRequest[]>([]);
@@ -35,12 +40,92 @@ const Cashouts: React.FC = () => {
   });
   const [filters, setFilters] = useState<CashoutFilters>({});
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
+  const [defaultFeePercentage, setDefaultFeePercentage] = useState('5');
+  const [editingDefaultFee, setEditingDefaultFee] = useState(false);
+  const [savingDefaultFee, setSavingDefaultFee] = useState(false);
 
   const { user } = useAuth();
 
   useEffect(() => {
     fetchData();
+    loadDefaultFee();
   }, [filters, activeTab]);
+
+  // Real-time listener for cashout transactions
+  useEffect(() => {
+    let q = query(
+      collection(db, 'transactions'),
+      where('type', '==', 'cashout'),
+      orderBy('createdAt', 'desc')
+    );
+
+    if (activeTab !== 'all') {
+      q = query(
+        collection(db, 'transactions'),
+        where('type', '==', 'cashout'),
+        where('status', '==', activeTab === 'pending' ? 'pending' : 
+                              activeTab === 'completed' ? 'completed' : 'cancelled'),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const cashoutsData = await Promise.all(snapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        let userName = data.metadata?.userName || 'Unknown';
+        let userEmail = data.metadata?.userEmail || '';
+
+        // If user info is missing, fetch it from users collection
+        if (userName === 'Unknown' || !userEmail) {
+          try {
+            const user = await UserService.getUserById(data.userId);
+            if (user) {
+              userName = user.name || user.displayName || 'Unknown';
+              userEmail = user.email || '';
+            }
+          } catch (error) {
+            console.error('Error fetching user data for cashout:', error);
+          }
+        }
+
+        return {
+          id: doc.id,
+          userId: data.userId,
+          userName,
+          userEmail,
+          requestedAmount: data.metadata?.requestedAmount || 0,
+          feePercentage: data.metadata?.feePercentage || 5,
+          feeAmount: data.metadata?.feeAmount || 0,
+          finalAmount: data.metadata?.finalAmount || 0,
+          status: data.status,
+          paymentMethodId: data.paymentMethodId || '',
+          paymentMethodName: data.metadata?.paymentMethodName || '',
+          externalTransactionId: doc.id,
+          notes: data.metadata?.notes,
+          adminNotes: data.metadata?.adminNotes,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          processedAt: data.metadata?.processedAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as CashoutRequest;
+      }));
+
+      setCashouts(cashoutsData);
+      
+      // Update stats when data changes
+      CashoutService.getCashoutStats().then(setStats);
+    });
+
+    return () => unsubscribe();
+  }, [activeTab]);
+
+  const loadDefaultFee = async () => {
+    try {
+      const settings = await SettingsService.getSettings();
+      setDefaultFeePercentage(settings.defaultCashoutFeePercentage.toString());
+    } catch (error) {
+      console.error('Error loading default fee:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -65,6 +150,26 @@ const Cashouts: React.FC = () => {
       console.error('Error fetching cashout data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDefaultFee = async () => {
+    try {
+      const feePercent = parseFloat(defaultFeePercentage);
+      if (isNaN(feePercent) || feePercent < 0 || feePercent > 100) {
+        alert('Please enter a valid fee percentage (0-100)');
+        return;
+      }
+
+      setSavingDefaultFee(true);
+      await SettingsService.updateDefaultCashoutFee(feePercent, user?.uid || '');
+      setEditingDefaultFee(false);
+      alert('Default fee percentage updated successfully');
+    } catch (error: any) {
+      console.error('Error saving default fee:', error);
+      alert(error.message || 'Failed to save default fee percentage');
+    } finally {
+      setSavingDefaultFee(false);
     }
   };
 
@@ -103,6 +208,54 @@ const Cashouts: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Manage user cashout requests and process payments</p>
         </div>
         <div className="flex items-center space-x-3">
+          {/* Default Fee Setting */}
+          <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2">
+            <GearIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">Default Fee:</span>
+            {editingDefaultFee ? (
+              <>
+                <input
+                  type="number"
+                  value={defaultFeePercentage}
+                  onChange={(e) => setDefaultFeePercentage(e.target.value)}
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="w-16 px-2 py-1 text-sm border-2 border-blue-500 rounded text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  autoFocus
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">%</span>
+                <button
+                  onClick={handleSaveDefaultFee}
+                  disabled={savingDefaultFee}
+                  className="flex items-center space-x-1 bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  <CheckIcon className="w-3 h-3" />
+                  <span className="text-xs">Save</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingDefaultFee(false);
+                    loadDefaultFee();
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">{defaultFeePercentage}%</span>
+                <button
+                  onClick={() => setEditingDefaultFee(true)}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Edit
+                </button>
+              </>
+            )}
+          </div>
+          
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -226,6 +379,7 @@ const Cashouts: React.FC = () => {
           users={users}
           paymentMethods={paymentMethods}
           adminId={user?.uid || ''}
+          defaultFeePercentage={defaultFeePercentage}
         />
       )}
 

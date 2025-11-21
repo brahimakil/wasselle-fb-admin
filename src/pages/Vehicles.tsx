@@ -99,6 +99,29 @@ const Vehicles: React.FC = () => {
     return user ? user.fullName : 'Unknown User';
   };
 
+  const getUserEmail = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.email : 'No email';
+  };
+
+  // Filter vehicles including user email and name in search
+  const filteredVehicles = vehicles.filter(vehicle => {
+    if (!filters.search) return true;
+    
+    const searchTerm = filters.search.toLowerCase();
+    const user = users.find(u => u.id === vehicle.userId);
+    const userName = user?.fullName?.toLowerCase() || '';
+    const userEmail = user?.email?.toLowerCase() || '';
+    
+    return (
+      vehicle.model.toLowerCase().includes(searchTerm) ||
+      vehicle.color.toLowerCase().includes(searchTerm) ||
+      vehicle.licensePlate.toLowerCase().includes(searchTerm) ||
+      userName.includes(searchTerm) ||
+      userEmail.includes(searchTerm)
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -155,7 +178,7 @@ const Vehicles: React.FC = () => {
             <option value="">All Users</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.fullName}
+                {user.fullName} ({user.email})
               </option>
             ))}
           </select>
@@ -205,7 +228,7 @@ const Vehicles: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Vehicles ({vehicles.length})
+            Vehicles ({filteredVehicles.length}{vehicles.length !== filteredVehicles.length ? ` of ${vehicles.length}` : ''})
           </h2>
           <button
             onClick={fetchVehicles}
@@ -222,17 +245,20 @@ const Vehicles: React.FC = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-gray-600 dark:text-gray-400 mt-2">Loading vehicles...</p>
             </div>
-          ) : vehicles.length === 0 ? (
+          ) : filteredVehicles.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 dark:text-gray-400">No vehicles found</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                {vehicles.length === 0 ? 'No vehicles found' : 'No vehicles match your search'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vehicles.map((vehicle) => (
+              {filteredVehicles.map((vehicle) => (
                 <VehicleCard
                   key={vehicle.id}
                   vehicle={vehicle}
                   userName={getUserName(vehicle.userId)}
+                  userEmail={getUserEmail(vehicle.userId)}
                   onUpdate={handleVehicleUpdate}
                 />
               ))}

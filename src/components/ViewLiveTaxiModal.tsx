@@ -154,6 +154,14 @@ const ViewLiveTaxiModal: React.FC<ViewLiveTaxiModalProps> = ({ post, onClose }) 
             </div>
           )}
 
+          {/* Weight (for delivery) */}
+          {post.serviceType === 'delivery' && post.weight && (
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Package Weight</h3>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">📦 {post.weight} kg</p>
+            </div>
+          )}
+
           {/* Price */}
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Offer Price</h3>

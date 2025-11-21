@@ -11,7 +11,7 @@ export interface UserWallet {
 export interface Transaction {
   id: string; // This will be the external transaction ID from admin
   userId: string;
-  type: 'recharge' | 'post_payment' | 'post_earning' | 'cashout' | 'admin_adjustment' | 'live_taxi_payment';
+  type: 'recharge' | 'post_payment' | 'post_earning' | 'cashout' | 'admin_adjustment' | 'live_taxi_payment' | 'transfer';
   amount: number; // Positive for credits, negative for debits
   description: string;
   relatedPostId?: string;
@@ -27,6 +27,16 @@ export interface Transaction {
     toUserId?: string;
     fromCity?: string;
     toCity?: string;
+    // Transfer-specific metadata
+    transferType?: 'sent' | 'received';
+    otherUserId?: string;
+    otherUserPhone?: string;
+    otherUserName?: string;
+    senderLocation?: {
+      latitude: number;
+      longitude: number;
+      timestamp: number;
+    };
     [key: string]: any;
   };
   createdAt: Date;

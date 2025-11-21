@@ -116,6 +116,25 @@ export class UserService {
     }
   }
 
+  // Get a single user by ID
+  static async getUserById(userId: string): Promise<User | null> {
+    try {
+      const userDoc = await getDoc(doc(db, this.COLLECTION_NAME, userId));
+      
+      if (!userDoc.exists()) {
+        return null;
+      }
+
+      return {
+        id: userDoc.id,
+        ...userDoc.data()
+      } as User;
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      return null;
+    }
+  }
+
   // Get all users with optional filters
   static async getUsers(filters?: UserFilters): Promise<User[]> {
     try {

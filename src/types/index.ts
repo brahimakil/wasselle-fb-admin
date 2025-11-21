@@ -4,3 +4,5 @@ export interface NavItem {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
 }
+
+export * from './weightBracket';

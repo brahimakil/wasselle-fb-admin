@@ -18,10 +18,15 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
 }) => {
   const [externalTransactionId, setExternalTransactionId] = useState(cashout.externalTransactionId || '');
   const [adminNotes, setAdminNotes] = useState(cashout.adminNotes || cashout.notes || '');
+  const [feePercentage, setFeePercentage] = useState(cashout.feePercentage.toString());
   const [loading, setLoading] = useState(false);
   const [checkingTransaction, setCheckingTransaction] = useState(false);
   const [error, setError] = useState('');
   const [transactionIdStatus, setTransactionIdStatus] = useState<'checking' | 'valid' | 'duplicate' | null>(null);
+
+  // Calculate amounts with updated fee
+  const feePercentageNum = parseFloat(feePercentage) || 0;
+  const calculatedAmounts = CashoutService.calculateCashoutAmounts(cashout.requestedAmount, feePercentageNum);
 
   // Check transaction ID when it changes
   useEffect(() => {
@@ -74,6 +79,13 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
       return;
     }
 
+    // Validate fee percentage
+    const feePercent = parseFloat(feePercentage);
+    if (isNaN(feePercent) || feePercent < 0 || feePercent > 100) {
+      setError('Please enter a valid fee percentage (0-100)');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -81,7 +93,8 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
         cashout.id,
         externalTransactionId.trim(),
         adminId,
-        adminNotes.trim() || ''
+        adminNotes.trim() || '',
+        feePercent !== cashout.feePercentage ? feePercent : undefined
       );
       onSuccess();
     } catch (error: any) {
@@ -125,7 +138,7 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          {/* Cashout Summary */}
+          {/* Cashout Summary with Editable Fee */}
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Cashout Summary</h3>
             <div className="space-y-2 text-sm">
@@ -139,19 +152,37 @@ const ProcessCashoutModal: React.FC<ProcessCashoutModalProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Requested:</span>
-                <span className="font-medium">{cashout.requestedAmount} pts (${cashout.requestedAmount})</span>
+                <span className="font-medium">{cashout.requestedAmount} pts (${calculatedAmounts.requestedDollars})</span>
               </div>
+              
+              {/* Editable Fee Percentage */}
+              <div className="flex justify-between items-center py-2 bg-white dark:bg-gray-600 rounded px-2">
+                <span className="text-gray-600 dark:text-gray-400">Fee (%):</span>
+                <input
+                  type="number"
+                  value={feePercentage}
+                  onChange={(e) => setFeePercentage(e.target.value)}
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="w-20 px-2 py-1 text-sm border-2 border-blue-300 dark:border-blue-600 rounded text-right font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Fee ({cashout.feePercentage}%):</span>
-                <span className="font-medium text-red-600">-${cashout.feeAmount}</span>
+                <span className="text-gray-600 dark:text-gray-400">Fee Amount:</span>
+                <span className="font-medium text-red-600">-${calculatedAmounts.feeAmount}</span>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-900 dark:text-white">User Receives:</span>
-                  <span className="font-bold text-green-600">${cashout.finalAmount}</span>
+                  <span className="font-bold text-green-600">${calculatedAmounts.finalAmount}</span>
                 </div>
               </div>
             </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              💡 You can adjust the fee percentage above
+            </p>
           </div>
 
           {/* Form */}

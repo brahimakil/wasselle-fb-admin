@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VehicleService } from '../services/vehicleService';
+import { BlacklistService } from '../services/blacklistService';
 import type { CreateVehicleData } from '../types/vehicle';
 import type { User } from '../types/user';
 import { Cross2Icon, UploadIcon } from '@radix-ui/react-icons';
@@ -133,6 +134,15 @@ const CreateVehicleModal: React.FC<CreateVehicleModalProps> = ({
     setLoading(true);
 
     try {
+      // Check if license plate is blacklisted
+      const isBlacklisted = await BlacklistService.isBlacklisted(formData.licensePlate);
+      if (isBlacklisted) {
+        const blacklistEntry = await BlacklistService.getBlacklistEntry(formData.licensePlate);
+        setError(`⚠️ This license plate is BLACKLISTED. Reason: ${blacklistEntry?.reason || 'No reason provided'}`);
+        setLoading(false);
+        return;
+      }
+
       const { userId, ...vehicleData } = formData;
       await VehicleService.createVehicle(vehicleData, userId, adminId);
       onSuccess();

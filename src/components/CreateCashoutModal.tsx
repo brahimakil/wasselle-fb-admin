@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CashoutService } from '../services/cashoutService';
 import { WalletService } from '../services/walletService';
+import { SettingsService } from '../services/settingsService';
 import type { User } from '../types/user';
 import type { PaymentMethod } from '../types/paymentMethod';
 import type { UserWallet } from '../types/wallet';
@@ -12,6 +13,7 @@ interface CreateCashoutModalProps {
   users: User[];
   paymentMethods: PaymentMethod[];
   adminId: string;
+  defaultFeePercentage?: string;
 }
 
 const CreateCashoutModal: React.FC<CreateCashoutModalProps> = ({
@@ -19,20 +21,48 @@ const CreateCashoutModal: React.FC<CreateCashoutModalProps> = ({
   onSuccess,
   users,
   paymentMethods,
-  adminId
+  adminId,
+  defaultFeePercentage: propDefaultFeePercentage
 }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [requestedPoints, setRequestedPoints] = useState('');
-  const [feePercentage, setFeePercentage] = useState('5'); // Default 5%
+  const [feePercentage, setFeePercentage] = useState(propDefaultFeePercentage || '5');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [externalTransactionId, setExternalTransactionId] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(true);
   const [checkingTransaction, setCheckingTransaction] = useState(false);
   const [error, setError] = useState('');
   const [userWallet, setUserWallet] = useState<UserWallet | null>(null);
   const [transactionIdStatus, setTransactionIdStatus] = useState<'checking' | 'valid' | 'duplicate' | null>(null);
   const [initialStatus, setInitialStatus] = useState<'pending' | 'completed'>('pending');
+
+  // Load default fee percentage from settings if not provided as prop
+  useEffect(() => {
+    const loadDefaultFee = async () => {
+      if (propDefaultFeePercentage) {
+        setLoadingSettings(false);
+        return;
+      }
+      try {
+        const settings = await SettingsService.getSettings();
+        setFeePercentage(settings.defaultCashoutFeePercentage.toString());
+      } catch (error) {
+        console.error('Error loading default fee:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    loadDefaultFee();
+  }, [propDefaultFeePercentage]);
+
+  // Update fee when prop changes
+  useEffect(() => {
+    if (propDefaultFeePercentage) {
+      setFeePercentage(propDefaultFeePercentage);
+    }
+  }, [propDefaultFeePercentage]);
 
   const selectedUser = users.find(user => user.id === selectedUserId);
   const selectedPaymentMethod = paymentMethods.find(method => method.id === paymentMethodId);
@@ -312,6 +342,7 @@ const CreateCashoutModal: React.FC<CreateCashoutModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Fee Percentage (%) *
+              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-normal">(You can adjust this)</span>
             </label>
             <div className="relative">
               <GearIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -324,14 +355,17 @@ const CreateCashoutModal: React.FC<CreateCashoutModalProps> = ({
                 max="100"
                 step="0.1"
                 disabled={!userWallet || userWallet.balance === 0}  // Disable if no wallet or balance is 0
-                className={`w-full pl-10 pr-3 py-2 border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-3 py-2 border-2 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                   !userWallet || userWallet.balance === 0 
                     ? 'bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 cursor-not-allowed opacity-50' 
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                    : 'bg-white dark:bg-gray-700 border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500'
                 }`}
                 required
               />
             </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Default is 5%. You can set any value from 0% to 100%
+            </p>
           </div>
 
           {/* Live Calculator */}

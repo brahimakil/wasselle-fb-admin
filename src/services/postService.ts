@@ -374,6 +374,29 @@ export class PostService {
     }
   }
 
+  // Reset user cancellations (Admin only)
+  static async resetUserCancellations(userId: string, unbanUser: boolean = false, month?: string): Promise<void> {
+    try {
+      const targetMonth = month || new Date().toISOString().slice(0, 7);
+      const cancellationId = `${userId}_${targetMonth}`;
+      
+      const cancellationRef = doc(db, this.CANCELLATIONS_COLLECTION, cancellationId);
+      await deleteDoc(cancellationRef);
+
+      // Unban user if requested
+      if (unbanUser) {
+        await UserService.updateUserStatus(userId, {
+          isBanned: false,
+          banReason: '',
+          banDate: null
+        } as any);
+      }
+    } catch (error) {
+      console.error('Error resetting cancellations:', error);
+      throw error;
+    }
+  }
+
   // Update post
   static async updatePost(postId: string, updates: Partial<Omit<Post, 'id' | 'userId' | 'createdAt' | 'createdBy'>>): Promise<void> {
     try {

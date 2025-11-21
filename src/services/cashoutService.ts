@@ -14,6 +14,7 @@ import {
 import { db } from '../firebase';
 import type { CashoutRequest, CreateCashoutData, CashoutFilters, CashoutStats } from '../types/cashout';
 import { WalletService } from './walletService';
+import { NotificationService } from './notificationService';
 
 export class CashoutService {
   private static readonly CASHOUTS_COLLECTION = 'cashoutRequests';
@@ -152,7 +153,8 @@ export class CashoutService {
     transactionId: string,
     externalTransactionId: string, 
     adminId: string,
-    adminNotes?: string
+    adminNotes?: string,
+    updatedFeePercentage?: number
   ): Promise<void> {
     try {
       // Read from transactions collection instead
@@ -177,6 +179,20 @@ export class CashoutService {
         }
       }
 
+      // If fee percentage was updated, recalculate amounts
+      if (updatedFeePercentage !== undefined && updatedFeePercentage !== transaction.metadata.feePercentage) {
+        const requestedAmount = transaction.metadata.requestedAmount || transaction.amount;
+        const amounts = this.calculateCashoutAmounts(Math.abs(requestedAmount), updatedFeePercentage);
+        
+        // Update metadata with new calculations
+        await updateDoc(transactionRef, {
+          'metadata.feePercentage': updatedFeePercentage,
+          'metadata.feeAmount': amounts.feeAmount,
+          'metadata.finalAmount': amounts.finalAmount,
+          updatedAt: new Date()
+        });
+      }
+
       // Update transaction status to completed and deduct points
       await WalletService.updateTransactionStatus(transactionId, 'completed');  // Use 'completed'
 
@@ -185,6 +201,30 @@ export class CashoutService {
         await updateDoc(transactionRef, {
           'metadata.adminNotes': adminNotes,
           updatedAt: new Date()
+        });
+      }
+
+      // Send notification to user about approved cashout
+      const finalTransaction = await getDoc(transactionRef);
+      if (finalTransaction.exists()) {
+        const transactionData = finalTransaction.data();
+        const requestedAmount = transactionData.metadata?.requestedAmount || Math.abs(transactionData.amount);
+        const finalAmount = transactionData.metadata?.finalAmount || requestedAmount;
+        const feePercentage = transactionData.metadata?.feePercentage || 0;
+        
+        await NotificationService.createNotification({
+          userId: transactionData.userId,
+          type: 'cashout_approved',
+          title: '✅ Cashout Approved',
+          message: `Your cashout request of $${requestedAmount.toFixed(2)} has been approved and processed. You will receive $${finalAmount.toFixed(2)} after a ${feePercentage}% processing fee.${adminNotes ? ` Admin note: ${adminNotes}` : ''}`,
+          data: {
+            transactionId,
+            requestedAmount,
+            finalAmount,
+            feePercentage,
+            externalTransactionId,
+            adminNotes: adminNotes || ''
+          }
         });
       }
 
@@ -385,25 +425,59 @@ export class CashoutService {
     adminNotes?: string
   ): Promise<void> {
     try {
+      const transactionRef = doc(db, 'transactions', transactionId);
+      const transactionDoc = await getDoc(transactionRef);
+      
+      if (!transactionDoc.exists()) {
+        throw new Error('Transaction not found');
+      }
+
+      const transactionData = transactionDoc.data();
+      const requestedAmount = transactionData.metadata?.requestedAmount || Math.abs(transactionData.amount);
+      const finalAmount = transactionData.metadata?.finalAmount || requestedAmount;
+      const feePercentage = transactionData.metadata?.feePercentage || 0;
+
       // Map cashout status to transaction status
       if (newStatus === 'completed') {
         await WalletService.updateTransactionStatus(transactionId, 'completed');
+        
+        // Send approval notification
+        await NotificationService.createNotification({
+          userId: transactionData.userId,
+          type: 'cashout_approved',
+          title: '✅ Cashout Approved',
+          message: `Your cashout request of $${requestedAmount.toFixed(2)} has been approved. You will receive $${finalAmount.toFixed(2)} after a ${feePercentage}% processing fee.${adminNotes ? ` Admin note: ${adminNotes}` : ''}`,
+          data: {
+            transactionId,
+            requestedAmount,
+            finalAmount,
+            feePercentage,
+            adminNotes: adminNotes || ''
+          }
+        });
       } else if (newStatus === 'cancelled') {
         await WalletService.updateTransactionStatus(transactionId, 'cancelled');
+        
+        // Send rejection notification
+        await NotificationService.createNotification({
+          userId: transactionData.userId,
+          type: 'cashout_rejected',
+          title: '❌ Cashout Rejected',
+          message: `Your cashout request of $${requestedAmount.toFixed(2)} has been rejected and cancelled.${adminNotes ? ` Reason: ${adminNotes}` : ''}`,
+          data: {
+            transactionId,
+            requestedAmount,
+            adminNotes: adminNotes || ''
+          }
+        });
       }
       
       // Update admin notes in metadata
       if (adminNotes) {
-        const transactionRef = doc(db, 'transactions', transactionId);
-        const transactionDoc = await getDoc(transactionRef);
-        
-        if (transactionDoc.exists()) {
-          const currentMetadata = transactionDoc.data().metadata || {};
-          await updateDoc(transactionRef, {
-            'metadata.adminNotes': adminNotes,
-            updatedAt: new Date()
-          });
-        }
+        await updateDoc(transactionRef, {
+          'metadata.adminNotes': adminNotes,
+          updatedAt: new Date()
+        });
       }
     } catch (error) {
       console.error('Error updating cashout status:', error);

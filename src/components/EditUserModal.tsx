@@ -70,6 +70,18 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSuccess 
       return;
     }
 
+    if (/\d/.test(formData.fullName)) {
+      setError('Full Name cannot contain numbers');
+      return;
+    }
+
+    // Check for bot-like email patterns
+    const emailLocalPart = formData.email.split('@')[0];
+    if (/\d{5,}/.test(emailLocalPart)) {
+      setError('Email address looks invalid (too many consecutive numbers)');
+      return;
+    }
+
     setLoading(true);
 
     try {

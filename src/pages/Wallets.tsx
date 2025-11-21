@@ -16,6 +16,8 @@ import {
   ReloadIcon,
   TokensIcon
 } from '@radix-ui/react-icons';
+import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Wallets: React.FC = () => {
   const [wallets, setWallets] = useState<UserWallet[]>([]);
@@ -23,13 +25,15 @@ const Wallets: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'wallets' | 'transactions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'wallets' | 'transactions' | 'transfers'>('overview');
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const { user: currentAdmin } = useAuth();
+  
+  const transferTransactions = transactions.filter(t => t.type === 'transfer');
 
   useEffect(() => {
     fetchData();
@@ -37,6 +41,30 @@ const Wallets: React.FC = () => {
     // Set up real-time transaction updates
     const unsubscribe = WalletService.subscribeToTransactions((newTransactions) => {
       setTransactions(newTransactions);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time listener for wallets
+  useEffect(() => {
+    const walletsQuery = query(collection(db, 'wallets'));
+    
+    const unsubscribe = onSnapshot(walletsQuery, async (snapshot) => {
+      const walletsData = snapshot.docs.map(doc => ({
+        userId: doc.id,
+        balance: doc.data().balance || 0,
+        totalEarned: doc.data().totalEarned || 0,
+        totalSpent: doc.data().totalSpent || 0,
+        totalCashouts: doc.data().totalCashouts || 0,
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      })) as UserWallet[];
+
+      setWallets(walletsData);
+      
+      // Update stats when wallets change
+      WalletService.getWalletStats().then(setStats);
     });
 
     return () => unsubscribe();
@@ -143,7 +171,8 @@ const Wallets: React.FC = () => {
             {[
               { id: 'overview', label: 'Overview', count: stats?.totalUsers || 0 },
               { id: 'wallets', label: 'User Wallets', count: wallets.length },
-              { id: 'transactions', label: 'Recent Transactions', count: transactions.length }
+              { id: 'transactions', label: 'Recent Transactions', count: transactions.length },
+              { id: 'transfers', label: 'In-App Transfers', count: transactions.filter(t => t.type === 'transfer').length }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -202,7 +231,7 @@ const Wallets: React.FC = () => {
                           switch (transaction.type) {
                             case 'recharge': return '💰';
                             case 'cashout': return '💸';
-                            case 'subscription': return '📝';
+                            case 'transfer': return '💸';
                             case 'admin_adjustment': return '⚙️';
                             default: return '💳';
                           }
@@ -218,13 +247,20 @@ const Wallets: React.FC = () => {
                           }
                         };
 
+                        // For transfer transactions, show proper sender/receiver info
+                        const displayName = transaction.type === 'transfer' && transaction.metadata?.transferType === 'received'
+                          ? `${transaction.metadata?.otherUserName || 'Unknown'} → ${user?.fullName || 'Unknown'}`
+                          : transaction.type === 'transfer' && transaction.metadata?.transferType === 'sent'
+                          ? `${user?.fullName || 'Unknown'} → ${transaction.metadata?.otherUserName || 'Unknown'}`
+                          : user?.fullName || 'Unknown User';
+
                         return (
                           <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <span className="text-lg">{getTransactionIcon()}</span>
                               <div>
                                 <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                  {user?.fullName || 'Unknown User'}
+                                  {displayName}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {transaction.type} • {transaction.status}
@@ -329,7 +365,126 @@ const Wallets: React.FC = () => {
               transactions={transactions} 
               users={users}
               onEditTransaction={handleEditTransaction}
+              onRefresh={fetchData}
             />
+          )}
+
+          {activeTab === 'transfers' && (
+            <div>
+              {/* Transfers Header */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">In-App Transfers</h2>
+                <p className="text-gray-600 dark:text-gray-400">Monitor all point transfers between users</p>
+              </div>
+
+              {/* Transfers Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sender</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Receiver</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Message</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {transferTransactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            No transfers yet
+                          </td>
+                        </tr>
+                      ) : (
+                        transferTransactions
+                          .filter(t => t.metadata?.transferType === 'sent') // Only show from sender's perspective
+                          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                          .map((transaction) => {
+                            const sender = getUserById(transaction.userId);
+                            const receiverId = transaction.metadata?.otherUserId;
+                            const receiver = receiverId ? getUserById(receiverId) : null;
+                            const location = transaction.metadata?.senderLocation;
+
+                            return (
+                              <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                  {new Date(transaction.createdAt).toLocaleDateString()}<br />
+                                  <span className="text-xs text-gray-500">{new Date(transaction.createdAt).toLocaleTimeString()}</span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">{sender?.fullName || 'Unknown'}</div>
+                                  <div className="text-xs text-gray-500">{sender?.phoneNumber || 'N/A'}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">{transaction.metadata?.otherUserName || 'Unknown'}</div>
+                                  <div className="text-xs text-gray-500">{transaction.metadata?.otherUserPhone || 'N/A'}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                                    {Math.abs(transaction.amount)} pts
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                  {transaction.description || '—'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  {location ? (
+                                    <div className="flex flex-col">
+                                      <a
+                                        href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                      >
+                                        📍 View Map
+                                      </a>
+                                      <span className="text-xs text-gray-500 mt-1">
+                                        {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400">No location</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Transfer Statistics */}
+              <div className="mt-6 bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Transfer Statistics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {(() => {
+                    const sentTransfers = transferTransactions.filter(t => t.metadata?.transferType === 'sent');
+                    const totalAmount = sentTransfers.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+                    const avgAmount = sentTransfers.length > 0 ? totalAmount / sentTransfers.length : 0;
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const todayTransfers = sentTransfers.filter(t => new Date(t.createdAt) >= today);
+
+                    return [
+                      { label: 'Total Transfers', value: sentTransfers.length, color: 'text-purple-600' },
+                      { label: 'Total Points Transferred', value: `${totalAmount} pts`, color: 'text-blue-600' },
+                      { label: 'Average Transfer', value: `${avgAmount.toFixed(0)} pts`, color: 'text-green-600' },
+                    ];
+                  })().map((stat, index) => (
+                    <div key={index} className="text-center">
+                      <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

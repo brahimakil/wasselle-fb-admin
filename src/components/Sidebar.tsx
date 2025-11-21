@@ -6,6 +6,8 @@ import { VehicleService } from '../services/vehicleService';
 import type { Vehicle } from '../types/vehicle';
 import type { User } from '../types/user';
 import type { CreateVehicleData } from '../types/vehicle';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 import { 
   HomeIcon, 
   PersonIcon, 
@@ -38,6 +40,14 @@ const Sidebar: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [showCreateVehicleModal, setShowCreateVehicleModal] = useState(false);
   const [selectedUserForVehicle, setSelectedUserForVehicle] = useState<User | null>(null);
+  const [pendingCounts, setPendingCounts] = useState({
+    users: 0,
+    vehicles: 0,
+    cashouts: 0,
+    wallets: 0,
+    livePosts: 0,
+    reports: 0
+  });
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -51,7 +61,8 @@ const Sidebar: React.FC = () => {
       path: '/admin/live-taxi', 
       icon: ({ className }) => <span className={className}>🚕</span>
     },
-    { id: 'subscriptions', label: 'Subscriptions', path: '/admin/subscriptions', icon: CheckCircledIcon },
+    // { id: 'subscriptions', label: 'Subscriptions', path: '/admin/subscriptions', icon: CheckCircledIcon },
+ 
     { id: 'wallets', label: 'Wallets', path: '/admin/wallets', icon: TokensIcon },
     { id: 'cashouts', label: 'Cashouts', path: '/admin/cashouts', icon: TokensIcon }, // Use TokensIcon (different from wallets)
     { id: 'payment-methods', label: 'Payment Methods', path: '/admin/payment-methods', icon: CardStackIcon },
@@ -63,6 +74,43 @@ const Sidebar: React.FC = () => {
       icon: ({ className }) => (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+      )
+    },
+    {
+      id: 'blacklist',
+      label: 'Blacklisted Plates',
+      path: '/admin/blacklist',
+      icon: ({ className }) => (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-1.414 1.414A7.963 7.963 0 0116 12a7.963 7.963 0 01-1.05 4.95l1.414 1.414A9.967 9.967 0 0020 12a9.967 9.967 0 00-1.636-6.364zM5.636 18.364l1.414-1.414A7.963 7.963 0 018 12a7.963 7.963 0 011.05-4.95L7.636 5 /path>14A9.967 9.967 0 004 12a9.967 9.967 0 001.636 6.364z" />
+        </svg>
+      )
+    },
+    
+   { 
+      id: 'notifications', 
+      label: 'Send Notifications', 
+      path: '/admin/notifications', 
+      icon: ({ className }) => <span className={className}>🔔</span>
+    },
+    { 
+      id: 'reports', 
+      label: 'Reports', 
+      path: '/admin/reports', 
+      icon: ({ className }) => <span className={className}>🚩</span>
+    },
+
+
+    {
+      id: 'weight-brackets',
+      label: 'Weight Brackets',
+      path: '/admin/weight-brackets',
+      icon: ({ className }) => (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M3 12h18M3 18h18" />
+          <circle cx="8" cy="12" r="2" fill="currentColor" />
+          <circle cx="16" cy="12" r="2" fill="currentColor" />
         </svg>
       )
     },
@@ -91,6 +139,78 @@ const Sidebar: React.FC = () => {
       }
     };
     fetchUsers();
+  }, []);
+
+  // Real-time listener for pending counts
+  useEffect(() => {
+    const unsubscribers: (() => void)[] = [];
+
+    // Listen to pending users (not verified)
+    const usersQuery = query(
+      collection(db, 'users'),
+      where('isVerified', '==', false),
+      where('isActive', '==', true)
+    );
+    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, users: snapshot.size }));
+    });
+    unsubscribers.push(unsubUsers);
+
+    // Listen to pending vehicles (not active - awaiting approval)
+    const vehiclesQuery = query(
+      collection(db, 'vehicles'),
+      where('isActive', '==', false)
+    );
+    const unsubVehicles = onSnapshot(vehiclesQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, vehicles: snapshot.size }));
+    });
+    unsubscribers.push(unsubVehicles);
+
+    // Listen to pending cashout transactions
+    const cashoutsQuery = query(
+      collection(db, 'transactions'),
+      where('type', '==', 'cashout'),
+      where('status', '==', 'pending')
+    );
+    const unsubCashouts = onSnapshot(cashoutsQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, cashouts: snapshot.size }));
+    });
+    unsubscribers.push(unsubCashouts);
+
+    // Listen to pending wallet transactions (recharge)
+    const walletsQuery = query(
+      collection(db, 'transactions'),
+      where('type', '==', 'recharge'),
+      where('status', '==', 'pending')
+    );
+    const unsubWallets = onSnapshot(walletsQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, wallets: snapshot.size }));
+    });
+    unsubscribers.push(unsubWallets);
+
+    // Listen to live posts with waiting status
+    const livePostsQuery = query(
+      collection(db, 'liveTaxiPosts'),
+      where('status', '==', 'waiting')
+    );
+    const unsubLivePosts = onSnapshot(livePostsQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, livePosts: snapshot.size }));
+    });
+    unsubscribers.push(unsubLivePosts);
+
+    // Listen to pending reports
+    const reportsQuery = query(
+      collection(db, 'reports'),
+      where('status', '==', 'pending')
+    );
+    const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
+      setPendingCounts(prev => ({ ...prev, reports: snapshot.size }));
+    });
+    unsubscribers.push(unsubReports);
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -140,26 +260,50 @@ const Sidebar: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 p-4">
           <ul className={`space-y-2 ${isCollapsed ? 'space-y-3' : ''}`}>
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2'} rounded-lg transition-colors group ${
-                      isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                    }`
-                  }
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <item.icon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
-                  {!isCollapsed && (
-                    <span className="text-sm font-medium">{item.label}</span>
-                  )}
-                </NavLink>
-              </li>
-            ))}
+            {navItems.map((item) => {
+              const getNotificationCount = () => {
+                switch (item.id) {
+                  case 'users': return pendingCounts.users;
+                  case 'vehicles': return pendingCounts.vehicles;
+                  case 'cashouts': return pendingCounts.cashouts;
+                  case 'wallets': return pendingCounts.wallets;
+                  case 'live-taxi': return pendingCounts.livePosts;
+                  case 'reports': return pendingCounts.reports;
+                  default: return 0;
+                }
+              };
+              const count = getNotificationCount();
+
+              return (
+                <li key={item.id} className="relative">
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2'} rounded-lg transition-colors group ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                      }`
+                    }
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <item.icon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium flex-1">{item.label}</span>
+                    )}
+                    {count > 0 && (
+                      <span className={`${
+                        isCollapsed 
+                          ? 'absolute -top-1 -right-1' 
+                          : 'ml-auto'
+                      } inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px]`}>
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
 
           {/* Home Locations Filter - only show when not collapsed */}

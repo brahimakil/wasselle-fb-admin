@@ -1,25 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Vehicle } from '../types/vehicle';
 import { VehicleService } from '../services/vehicleService';
+import { BlacklistService } from '../services/blacklistService';
 import EditVehicleModal from './EditVehicleModal';
 import { 
   EyeOpenIcon,
   EyeClosedIcon,
-  TrashIcon
+  TrashIcon,
+  CrossCircledIcon
 } from '@radix-ui/react-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
   userName: string;
+  userEmail: string;
   onUpdate: () => void;
 }
 
-const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, userName, onUpdate }) => {
+const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, userName, userEmail, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
+  const [blacklistReason, setBlacklistReason] = useState('');
   const { user: currentAdmin } = useAuth();
+
+  useEffect(() => {
+    checkBlacklist();
+  }, [vehicle.licensePlate]);
+
+  const checkBlacklist = async () => {
+    if (vehicle.licensePlate) {
+      const blacklisted = await BlacklistService.isBlacklisted(vehicle.licensePlate);
+      setIsBlacklisted(blacklisted);
+      if (blacklisted) {
+        const entry = await BlacklistService.getBlacklistEntry(vehicle.licensePlate);
+        setBlacklistReason(entry?.reason || 'No reason provided');
+      }
+    }
+  };
 
   const handleStatusUpdate = async (isActive: boolean) => {
     try {
@@ -74,9 +94,14 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, userName, onUpdate }
               </span>
             </div>
             
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Owner: {userName}
-            </p>
+            <div className="mb-2">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {userName}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {userEmail}
+              </p>
+            </div>
             
             <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
               <span>{vehicle.color}</span>
@@ -87,6 +112,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, userName, onUpdate }
 
           {/* Status Badge */}
           <div className="flex flex-col items-end space-y-2">
+            {isBlacklisted && (
+              <div className="flex items-center space-x-1 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold" title={`Blacklisted: ${blacklistReason}`}>
+                <CrossCircledIcon className="w-3 h-3" />
+                <span>BLACKLISTED</span>
+              </div>
+            )}
             <span className={`text-xs px-2 py-1 rounded-full ${
               vehicle.isActive
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'

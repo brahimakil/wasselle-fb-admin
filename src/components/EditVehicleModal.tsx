@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VehicleService } from '../services/vehicleService';
+import { BlacklistService } from '../services/blacklistService';
 import type { Vehicle } from '../types/vehicle';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import AutocompleteInput from './AutocompleteInput';
@@ -62,6 +63,17 @@ const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onClose, o
     setLoading(true);
 
     try {
+      // Check if license plate is blacklisted (only if it changed)
+      if (formData.licensePlate !== vehicle.licensePlate) {
+        const isBlacklisted = await BlacklistService.isBlacklisted(formData.licensePlate);
+        if (isBlacklisted) {
+          const blacklistEntry = await BlacklistService.getBlacklistEntry(formData.licensePlate);
+          setError(`⚠️ This license plate is BLACKLISTED. Reason: ${blacklistEntry?.reason || 'No reason provided'}`);
+          setLoading(false);
+          return;
+        }
+      }
+
       await VehicleService.updateVehicle(vehicle.id, formData);
       onSuccess();
     } catch (error: any) {
