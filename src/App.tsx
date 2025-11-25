@@ -15,6 +15,8 @@ import Subscriptions from './pages/Subscriptions';
 import Notifications from './pages/Notifications';
 import Blacklist from './pages/Blacklist';
 import Reports from './pages/Reports';
+import Ratings from './pages/Ratings';
+import Settings from './pages/Settings';
 import Wallets from './pages/Wallets';
 import Countries from './pages/Countries';
 import Vehicles from './pages/Vehicles';
@@ -65,6 +67,8 @@ function App() {
               <Route path="vehicles" element={<Vehicles />} />
               <Route path="blacklist" element={<Blacklist />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="ratings" element={<Ratings />} />
+              <Route path="settings" element={<Settings />} />
               <Route path="weight-brackets" element={<WeightBracketsPage />} />
             </Route>
             
