@@ -101,8 +101,8 @@ const Reports: React.FC = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports Management</h1>
-        <p className="text-gray-600">Review and respond to user reports</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Reports Management</h1>
+        <p className="text-gray-600 dark:text-gray-400">Review and respond to user reports</p>
       </div>
 
       {/* Status Filter */}
@@ -112,7 +112,7 @@ const Reports: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             statusFilter === 'all'
               ? 'bg-indigo-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           All Reports
@@ -122,7 +122,7 @@ const Reports: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             statusFilter === 'pending'
               ? 'bg-yellow-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Pending
@@ -132,7 +132,7 @@ const Reports: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             statusFilter === 'reviewed'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Reviewed
@@ -142,7 +142,7 @@ const Reports: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             statusFilter === 'resolved'
               ? 'bg-green-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Resolved
@@ -154,10 +154,10 @@ const Reports: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
       ) : reports.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-6xl mb-4">🚩</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Reports Found</h3>
-          <p className="text-gray-600">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Reports Found</h3>
+          <p className="text-gray-600 dark:text-gray-400">
             {statusFilter === 'all' 
               ? 'No reports have been submitted yet'
               : `No ${statusFilter} reports found`}
@@ -168,42 +168,42 @@ const Reports: React.FC = () => {
           {reports.map((report) => (
             <div
               key={report.id}
-              className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{report.issue}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{report.issue}</h3>
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
                       {getStatusIcon(report.status)}
                       {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                     Submitted on {report.createdAt.toLocaleString()}
                   </p>
                 </div>
               </div>
 
               <div className="mb-4">
-                <p className="text-gray-700 whitespace-pre-wrap">{report.description}</p>
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{report.description}</p>
               </div>
 
               {/* Reporter Information */}
-              <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   <span>👤</span>
                   Reporter Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <p className="text-sm text-gray-600">Name</p>
-                    <p className="font-medium text-gray-900">{report.reporterName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Name</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{report.reporterName}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{report.reporterEmail}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{report.reporterEmail}</p>
                       <button
                         onClick={() => openEmail(report.reporterEmail)}
                         className="text-blue-600 hover:text-blue-800"
@@ -214,9 +214,9 @@ const Reports: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Phone</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{report.reporterPhone}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{report.reporterPhone}</p>
                       <button
                         onClick={() => openWhatsApp(report.reporterPhone)}
                         className="text-green-600 hover:text-green-800"
@@ -231,23 +231,23 @@ const Reports: React.FC = () => {
 
               {/* Reported Person Information */}
               {(report.reportedPersonName || report.reportedPersonPhone || report.reportedPersonEmail || report.reportedPersonCountry || report.reportedPersonCity || report.reportedVehiclePlate || report.reportedPersonDetails) && (
-                <div className="bg-red-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                     <span className="text-red-600">🚩</span>
                     Reported Person Information
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {report.reportedPersonName && (
                       <div>
-                        <p className="text-sm text-gray-600">Name</p>
-                        <p className="font-medium text-gray-900">{report.reportedPersonName}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Name</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{report.reportedPersonName}</p>
                       </div>
                     )}
                     {report.reportedPersonPhone && (
                       <div>
-                        <p className="text-sm text-gray-600">Phone</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900">{report.reportedPersonPhone}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{report.reportedPersonPhone}</p>
                           <button
                             onClick={() => openWhatsApp(report.reportedPersonPhone!)}
                             className="text-green-600 hover:text-green-800"
@@ -260,9 +260,9 @@ const Reports: React.FC = () => {
                     )}
                     {report.reportedPersonEmail && (
                       <div>
-                        <p className="text-sm text-gray-600">Email</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900">{report.reportedPersonEmail}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{report.reportedPersonEmail}</p>
                           <button
                             onClick={() => openEmail(report.reportedPersonEmail!)}
                             className="text-blue-600 hover:text-blue-800"
@@ -275,26 +275,26 @@ const Reports: React.FC = () => {
                     )}
                     {report.reportedPersonCountry && (
                       <div>
-                        <p className="text-sm text-gray-600">Country</p>
-                        <p className="font-medium text-gray-900">{report.reportedPersonCountry}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Country</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{report.reportedPersonCountry}</p>
                       </div>
                     )}
                     {report.reportedPersonCity && (
                       <div>
-                        <p className="text-sm text-gray-600">City</p>
-                        <p className="font-medium text-gray-900">{report.reportedPersonCity}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">City</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{report.reportedPersonCity}</p>
                       </div>
                     )}
                     {report.reportedVehiclePlate && (
                       <div>
-                        <p className="text-sm text-gray-600">Vehicle License Plate</p>
-                        <p className="font-medium text-gray-900">{report.reportedVehiclePlate}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Vehicle License Plate</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{report.reportedVehiclePlate}</p>
                       </div>
                     )}
                     {report.reportedPersonDetails && (
                       <div className="col-span-2">
-                        <p className="text-sm text-gray-600">Additional Details</p>
-                        <p className="font-medium text-gray-900 whitespace-pre-wrap">{report.reportedPersonDetails}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Additional Details</p>
+                        <p className="font-medium text-gray-900 dark:text-white whitespace-pre-wrap">{report.reportedPersonDetails}</p>
                       </div>
                     )}
                   </div>
@@ -303,14 +303,14 @@ const Reports: React.FC = () => {
 
               {/* Admin Response */}
               {report.adminResponse && (
-                <div className="bg-green-50 rounded-lg p-4 mb-4 border-l-4 border-green-500">
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <span className="text-green-600">✅</span>
+                <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 mb-4 border-l-4 border-green-500">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400">✅</span>
                     Admin Response
                   </h4>
-                  <p className="text-gray-700 whitespace-pre-wrap">{report.adminResponse}</p>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{report.adminResponse}</p>
                   {report.reviewedAt && (
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Responded on {report.reviewedAt.toLocaleString()}
                     </p>
                   )}
@@ -348,20 +348,20 @@ const Reports: React.FC = () => {
       {/* Response Modal */}
       {selectedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Respond to Report: {selectedReport.issue}
               </h2>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Your Response to {selectedReport.reporterName}
                 </label>
                 <textarea
                   value={adminResponse}
                   onChange={(e) => setAdminResponse(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   rows={6}
                   placeholder="Enter your response here... (e.g., 'Request approved', 'We will follow up', etc.)"
                 />
@@ -388,7 +388,7 @@ const Reports: React.FC = () => {
                     setAdminResponse('');
                   }}
                   disabled={submitting}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
                 >
                   Cancel
                 </button>
