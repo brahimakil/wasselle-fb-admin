@@ -109,6 +109,7 @@ const CountryCard: React.FC<CountryCardProps> = ({ country, onUpdate }) => {
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Code: {country.code}
+                {country.phoneCountryCode && ` • Phone: ${country.phoneCountryCode}`}
               </p>
             </div>
           </div>

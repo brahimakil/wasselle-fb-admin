@@ -13,6 +13,8 @@ const EditCountryModal: React.FC<EditCountryModalProps> = ({ country, onClose, o
   const [formData, setFormData] = useState({
     name: country.name,
     code: country.code,
+    phoneCountryCode: country.phoneCountryCode || '',
+    phoneNumberLength: country.phoneNumberLength || undefined,
     flag: country.flag || '',
     isActive: country.isActive,
   });
@@ -128,6 +130,42 @@ const EditCountryModal: React.FC<EditCountryModalProps> = ({ country, onClose, o
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Phone Country Code (Optional)
+              </label>
+              <input
+                type="text"
+                name="phoneCountryCode"
+                value={formData.phoneCountryCode}
+                onChange={handleInputChange}
+                placeholder="e.g., +1, +33, +961"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Phone dialing code (e.g., +1, +44, +961)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Phone Number Length (Optional)
+              </label>
+              <input
+                type="number"
+                name="phoneNumberLength"
+                value={formData.phoneNumberLength || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 8, 9, 10"
+                min="1"
+                max="15"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Expected digits after country code
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Flag (Optional)
               </label>
               <input
@@ -169,6 +207,8 @@ const EditCountryModal: React.FC<EditCountryModalProps> = ({ country, onClose, o
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Code: {formData.code}
+                  {formData.phoneCountryCode && ` • Phone: ${formData.phoneCountryCode}`}
+                  {formData.phoneNumberLength && ` (${formData.phoneNumberLength} digits)`}
                 </p>
               </div>
               <span className={`text-xs px-2 py-1 rounded-full ${

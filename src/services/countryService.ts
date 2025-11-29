@@ -28,6 +28,8 @@ export class CountryService {
       const countryDoc: Omit<Country, 'id'> = {
         name: countryData.name,
         code: countryData.code.toUpperCase(),
+        phoneCountryCode: countryData.phoneCountryCode || '',
+        phoneNumberLength: countryData.phoneNumberLength,
         flag: countryData.flag || '',
         isActive: true,
         createdAt: new Date(),

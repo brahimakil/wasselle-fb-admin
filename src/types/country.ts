@@ -2,6 +2,8 @@ export interface Country {
   id: string;
   name: string;
   code: string; // ISO country code (e.g., "US", "FR", "JP")
+  phoneCountryCode?: string; // Phone country code (e.g., "+1", "+33", "+81")
+  phoneNumberLength?: number; // Expected phone number length (digits after country code) - Optional reference
   flag?: string; // Optional flag emoji or URL
   isActive: boolean;
   createdAt: Date;
@@ -22,6 +24,8 @@ export interface City {
 export interface CreateCountryData {
   name: string;
   code: string;
+  phoneCountryCode?: string;
+  phoneNumberLength?: number;
   flag?: string;
 }
 

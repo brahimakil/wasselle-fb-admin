@@ -36,6 +36,12 @@ import { CountryService } from '../services/countryService';
 const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    'money-management': false,
+    'user-management': false,
+    'settings': false,
+    'countries-vehicles': false,
+  });
   const [homeLocations, setHomeLocations] = useState<Array<{id: string, name: string, flag?: string}>>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [showCreateVehicleModal, setShowCreateVehicleModal] = useState(false);
@@ -51,85 +57,131 @@ const Sidebar: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard', icon: HomeIcon },
-    { id: 'users', label: 'Users', path: '/admin/users', icon: PersonIcon },
-    // { id: 'posts', label: 'Posts (Deprecated)', path: '/admin/posts', icon: RocketIcon },
-    { 
-      id: 'live-taxi', 
-      label: 'Live Posts (Taxi/Delivery)', 
-      path: '/admin/live-taxi', 
-      icon: ({ className }) => <span className={className}>🚕</span>
-    },
-    // { id: 'subscriptions', label: 'Subscriptions', path: '/admin/subscriptions', icon: CheckCircledIcon },
- 
-    { id: 'wallets', label: 'Wallets', path: '/admin/wallets', icon: TokensIcon },
-    { id: 'cashouts', label: 'Cashouts', path: '/admin/cashouts', icon: TokensIcon }, // Use TokensIcon (different from wallets)
-    { id: 'payment-methods', label: 'Payment Methods', path: '/admin/payment-methods', icon: CardStackIcon },
-    { id: 'countries', label: 'Countries', path: '/admin/countries', icon: GlobeIcon },
-    {
-      id: 'vehicles',
-      label: 'Vehicles',
-      path: '/admin/vehicles',
-      icon: ({ className }) => (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-        </svg>
-      )
-    },
-    {
-      id: 'blacklist',
-      label: 'Blacklisted Plates',
-      path: '/admin/blacklist',
-      icon: ({ className }) => (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-1.414 1.414A7.963 7.963 0 0116 12a7.963 7.963 0 01-1.05 4.95l1.414 1.414A9.967 9.967 0 0020 12a9.967 9.967 0 00-1.636-6.364zM5.636 18.364l1.414-1.414A7.963 7.963 0 018 12a7.963 7.963 0 011.05-4.95L7.636 5 /path>14A9.967 9.967 0 004 12a9.967 9.967 0 001.636 6.364z" />
-        </svg>
-      )
-    },
     
-   { 
-      id: 'notifications', 
-      label: 'Send Notifications', 
-      path: '/admin/notifications', 
-      icon: ({ className }) => <span className={className}>🔔</span>
-    },
-    { 
-      id: 'reports', 
-      label: 'Reports', 
-      path: '/admin/reports', 
-      icon: ({ className }) => <span className={className}>🚩</span>
-    },
-    { 
-      id: 'ratings', 
-      label: 'Ratings & Reviews', 
-      path: '/admin/ratings', 
-      icon: ({ className }) => <span className={className}>⭐</span>
+    // Money Management Section
+    {
+      id: 'money-management',
+      label: 'Money Management',
+      icon: TokensIcon,
+      isSection: true,
+      children: [
+        { id: 'cashouts', label: 'Cashouts', path: '/admin/cashouts', icon: TokensIcon },
+        { id: 'payment-methods', label: 'Payment Methods', path: '/admin/payment-methods', icon: CardStackIcon },
+        { id: 'wallets', label: 'Wallets', path: '/admin/wallets', icon: TokensIcon },
+      ]
     },
 
+    // User & Post Management Section
+    {
+      id: 'user-management',
+      label: 'Users & Posts',
+      icon: PersonIcon,
+      isSection: true,
+      children: [
+        { id: 'users', label: 'Users', path: '/admin/users', icon: PersonIcon },
+        { 
+          id: 'live-taxi', 
+          label: 'Live Posts', 
+          path: '/admin/live-taxi', 
+          icon: ({ className }) => <span className={className}>🚕</span>
+        },
+        { 
+          id: 'ratings', 
+          label: 'Ratings & Reviews', 
+          path: '/admin/ratings', 
+          icon: ({ className }) => <span className={className}>⭐</span>
+        },
+        { 
+          id: 'reports', 
+          label: 'Reports', 
+          path: '/admin/reports', 
+          icon: ({ className }) => <span className={className}>🚩</span>
+        },
+      ]
+    },
+
+    // Settings Section
     {
       id: 'settings',
-      label: 'App Settings',
-      path: '/admin/settings',
+      label: 'Settings & Notifications',
       icon: ({ className }) => (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-      )
+      ),
+      isSection: true,
+      children: [
+        {
+          id: 'app-settings',
+          label: 'App Settings',
+          path: '/admin/settings',
+          icon: ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )
+        },
+        {
+          id: 'weight-brackets',
+          label: 'Weight Brackets',
+          path: '/admin/weight-brackets',
+          icon: ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M3 12h18M3 18h18" />
+              <circle cx="8" cy="12" r="2" fill="currentColor" />
+              <circle cx="16" cy="12" r="2" fill="currentColor" />
+            </svg>
+          )
+        },
+        { 
+          id: 'notifications', 
+          label: 'Send Notifications', 
+          path: '/admin/notifications', 
+          icon: ({ className }) => <span className={className}>🔔</span>
+        },
+      ]
     },
 
+    // Countries & Vehicles Section
     {
-      id: 'weight-brackets',
-      label: 'Weight Brackets',
-      path: '/admin/weight-brackets',
-      icon: ({ className }) => (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M3 12h18M3 18h18" />
-          <circle cx="8" cy="12" r="2" fill="currentColor" />
-          <circle cx="16" cy="12" r="2" fill="currentColor" />
-        </svg>
-      )
+      id: 'countries-vehicles',
+      label: 'Countries & Vehicles',
+      icon: GlobeIcon,
+      isSection: true,
+      children: [
+        { id: 'countries', label: 'Countries', path: '/admin/countries', icon: GlobeIcon },
+        {
+          id: 'vehicles',
+          label: 'Vehicles',
+          path: '/admin/vehicles',
+          icon: ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+            </svg>
+          )
+        },
+        {
+          id: 'blacklist',
+          label: 'Blacklisted Plates',
+          path: '/admin/blacklist',
+          icon: ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-1.414 1.414A7.963 7.963 0 0116 12a7.963 7.963 0 01-1.05 4.95l1.414 1.414A9.967 9.967 0 0020 12a9.967 9.967 0 00-1.636-6.364zM5.636 18.364l1.414-1.414A7.963 7.963 0 018 12a7.963 7.963 0 011.05-4.95L7.636 5.636A9.967 9.967 0 004 12a9.967 9.967 0 001.636 6.364z" />
+            </svg>
+          )
+        },
+      ]
     },
   ];
 
@@ -275,22 +327,101 @@ const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <ul className={`space-y-2 ${isCollapsed ? 'space-y-3' : ''}`}>
-            {navItems.map((item) => {
-              const getNotificationCount = () => {
-                switch (item.id) {
-                  case 'users': return pendingCounts.users;
-                  case 'vehicles': return pendingCounts.vehicles;
-                  case 'cashouts': return pendingCounts.cashouts;
-                  case 'wallets': return pendingCounts.wallets;
-                  case 'live-taxi': return pendingCounts.livePosts;
-                  case 'reports': return pendingCounts.reports;
-                  default: return 0;
-                }
-              };
-              const count = getNotificationCount();
+            {navItems.map((item: any) => {
+              if (item.isSection) {
+                // Section with dropdown
+                const isExpanded = expandedSections[item.id];
+                const totalPendingInSection = item.children?.reduce((sum: number, child: any) => {
+                  const getChildCount = () => {
+                    switch (child.id) {
+                      case 'users': return pendingCounts.users;
+                      case 'vehicles': return pendingCounts.vehicles;
+                      case 'cashouts': return pendingCounts.cashouts;
+                      case 'wallets': return pendingCounts.wallets;
+                      case 'live-taxi': return pendingCounts.livePosts;
+                      case 'reports': return pendingCounts.reports;
+                      default: return 0;
+                    }
+                  };
+                  return sum + getChildCount();
+                }, 0);
 
+                return (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => toggleSection(item.id)}
+                      className={`flex items-center w-full ${
+                        isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2'
+                      } rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white`}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <item.icon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                          {totalPendingInSection > 0 && (
+                            <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px] mr-2">
+                              {totalPendingInSection > 99 ? '99+' : totalPendingInSection}
+                            </span>
+                          )}
+                          {isExpanded ? (
+                            <ChevronDownIcon className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Children items */}
+                    {!isCollapsed && isExpanded && item.children && (
+                      <ul className="mt-1 ml-4 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+                        {item.children.map((child: any) => {
+                          const getNotificationCount = () => {
+                            switch (child.id) {
+                              case 'users': return pendingCounts.users;
+                              case 'vehicles': return pendingCounts.vehicles;
+                              case 'cashouts': return pendingCounts.cashouts;
+                              case 'wallets': return pendingCounts.wallets;
+                              case 'live-taxi': return pendingCounts.livePosts;
+                              case 'reports': return pendingCounts.reports;
+                              default: return 0;
+                            }
+                          };
+                          const count = getNotificationCount();
+
+                          return (
+                            <li key={child.id} className="relative">
+                              <NavLink
+                                to={child.path}
+                                className={({ isActive }) =>
+                                  `flex items-center px-3 py-1.5 rounded-lg transition-colors text-sm ${
+                                    isActive
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                                  }`
+                                }
+                              >
+                                <child.icon className="w-4 h-4 mr-2" />
+                                <span className="flex-1">{child.label}</span>
+                                {count > 0 && (
+                                  <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px]">
+                                    {count > 99 ? '99+' : count}
+                                  </span>
+                                )}
+                              </NavLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
+
+              // Regular nav item (Dashboard)
               return (
                 <li key={item.id} className="relative">
                   <NavLink
@@ -307,15 +438,6 @@ const Sidebar: React.FC = () => {
                     <item.icon className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${isCollapsed ? '' : 'mr-3'}`} />
                     {!isCollapsed && (
                       <span className="text-sm font-medium flex-1">{item.label}</span>
-                    )}
-                    {count > 0 && (
-                      <span className={`${
-                        isCollapsed 
-                          ? 'absolute -top-1 -right-1' 
-                          : 'ml-auto'
-                      } inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px]`}>
-                        {count > 99 ? '99+' : count}
-                      </span>
                     )}
                   </NavLink>
                 </li>

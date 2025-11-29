@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface Rating {
@@ -31,6 +31,7 @@ const Ratings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [ratingFilter, setRatingFilter] = useState<number | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'taxi' | 'delivery'>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadRatings();
@@ -111,6 +112,24 @@ const Ratings: React.FC = () => {
       });
     } catch {
       return 'Invalid date';
+    }
+  };
+
+  const handleDeleteReview = async (ratingId: string, reviewerName: string, driverName: string) => {
+    if (!window.confirm(`Delete review by ${reviewerName} for ${driverName}?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(ratingId);
+      await deleteDoc(doc(db, 'ratings', ratingId));
+      alert('Review deleted successfully');
+      await loadRatings();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -303,8 +322,21 @@ const Ratings: React.FC = () => {
                         </div>
                         {renderStars(rating.rating)}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(rating.createdAt)}
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {formatDate(rating.createdAt)}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteReview(rating.id, rating.raterUserName, rating.ratedUserName)}
+                          disabled={deletingId === rating.id}
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-1"
+                          title="Delete review"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          {deletingId === rating.id ? 'Deleting...' : 'Delete'}
+                        </button>
                       </div>
                     </div>
                     

@@ -17,6 +17,8 @@ const CreateCountryModal: React.FC<CreateCountryModalProps> = ({
   const [formData, setFormData] = useState<CreateCountryData>({
     name: '',
     code: '',
+    phoneCountryCode: '',
+    phoneNumberLength: undefined,
     flag: '',
   });
   const [loading, setLoading] = useState(false);
@@ -72,22 +74,24 @@ const CreateCountryModal: React.FC<CreateCountryModalProps> = ({
 
   // Common country suggestions
   const commonCountries = [
-    { name: 'United States', code: 'US', flag: '🇺🇸' },
-    { name: 'United Kingdom', code: 'GB', flag: '🇬🇧' },
-    { name: 'Canada', code: 'CA', flag: '🇨🇦' },
-    { name: 'France', code: 'FR', flag: '🇫🇷' },
-    { name: 'Germany', code: 'DE', flag: '🇩🇪' },
-    { name: 'Japan', code: 'JP', flag: '🇯🇵' },
-    { name: 'Australia', code: 'AU', flag: '🇦🇺' },
-    { name: 'India', code: 'IN', flag: '🇮🇳' },
-    { name: 'Lebanon', code: 'LB', flag: '🇱🇧' },
-    { name: 'United Arab Emirates', code: 'AE', flag: '🇦🇪' },
+    { name: 'United States', code: 'US', phoneCountryCode: '+1', phoneNumberLength: 10, flag: '🇺🇸' },
+    { name: 'United Kingdom', code: 'GB', phoneCountryCode: '+44', phoneNumberLength: 10, flag: '🇬🇧' },
+    { name: 'Canada', code: 'CA', phoneCountryCode: '+1', phoneNumberLength: 10, flag: '🇨🇦' },
+    { name: 'France', code: 'FR', phoneCountryCode: '+33', phoneNumberLength: 9, flag: '🇫🇷' },
+    { name: 'Germany', code: 'DE', phoneCountryCode: '+49', phoneNumberLength: 10, flag: '🇩🇪' },
+    { name: 'Japan', code: 'JP', phoneCountryCode: '+81', phoneNumberLength: 10, flag: '🇯🇵' },
+    { name: 'Australia', code: 'AU', phoneCountryCode: '+61', phoneNumberLength: 9, flag: '🇦🇺' },
+    { name: 'India', code: 'IN', phoneCountryCode: '+91', phoneNumberLength: 10, flag: '🇮🇳' },
+    { name: 'Lebanon', code: 'LB', phoneCountryCode: '+961', phoneNumberLength: 8, flag: '🇱🇧' },
+    { name: 'United Arab Emirates', code: 'AE', phoneCountryCode: '+971', phoneNumberLength: 9, flag: '🇦🇪' },
   ];
 
   const handleCountrySelect = (country: typeof commonCountries[0]) => {
     setFormData({
       name: country.name,
       code: country.code,
+      phoneCountryCode: country.phoneCountryCode,
+      phoneNumberLength: country.phoneNumberLength,
       flag: country.flag,
     });
   };
@@ -175,6 +179,42 @@ const CreateCountryModal: React.FC<CreateCountryModalProps> = ({
                 </p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Phone Country Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="phoneCountryCode"
+                  value={formData.phoneCountryCode}
+                  onChange={handleInputChange}
+                  placeholder="e.g., +1, +33, +961"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Phone dialing code (e.g., +1, +44, +961)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Phone Number Length (Optional)
+                </label>
+                <input
+                  type="number"
+                  name="phoneNumberLength"
+                  value={formData.phoneNumberLength || ''}
+                  onChange={(e) => handleInputChange(e)}
+                  placeholder="e.g., 8, 9, 10"
+                  min="1"
+                  max="15"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Expected digits after country code (e.g., Lebanon: 8)
+                </p>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Flag (Optional)
@@ -210,6 +250,8 @@ const CreateCountryModal: React.FC<CreateCountryModalProps> = ({
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Code: {formData.code || 'XX'}
+                    {formData.phoneCountryCode && ` • Phone: ${formData.phoneCountryCode}`}
+                    {formData.phoneNumberLength && ` (${formData.phoneNumberLength} digits)`}
                   </p>
                 </div>
               </div>
