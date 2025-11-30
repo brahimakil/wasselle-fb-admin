@@ -76,7 +76,16 @@ const CashoutCard: React.FC<CashoutCardProps> = ({ cashout, adminId, onProcess, 
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow relative">
+      {/* NEW Badge for pending cashouts */}
+      {cashout.status === 'pending' && (
+        <div className="absolute top-4 right-4 z-10">
+          <span className="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+            NEW
+          </span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">

@@ -32,8 +32,15 @@ const LiveTaxi: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Include expired posts when showing 'waiting' or 'cancelled' status to see all pending items
+      const fetchFilters = {
+        ...filters,
+        showExpired: filters.status === 'waiting' || filters.status === 'cancelled' || !filters.status
+      };
+      
       const [fetchedPosts, fetchedStats, fetchedUsers, fetchedCountries] = await Promise.all([
-        LiveTaxiService.getLiveTaxiPostsWithApplications(filters),
+        LiveTaxiService.getLiveTaxiPostsWithApplications(fetchFilters),
         LiveTaxiService.getLiveTaxiStats(),
         UserService.getUsers(),
         CountryService.getActiveCountries(),
@@ -244,7 +251,7 @@ const LiveTaxi: React.FC = () => {
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">All Status</option>
-            <option value="waiting">⏳ Waiting</option>
+            <option value="waiting">🔴 NEW (Waiting)</option>
             <option value="accepted">✅ Accepted</option>
             <option value="completed">🏁 Completed</option>
             <option value="cancelled">❌ Cancelled</option>

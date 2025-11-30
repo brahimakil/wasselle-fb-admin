@@ -84,7 +84,16 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdate }) => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative">
+      {/* NEW Badge for unverified users */}
+      {!user.isVerified && user.isActive && (
+        <div className="absolute top-4 right-4 z-10">
+          <span className="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+            NEW
+          </span>
+        </div>
+      )}
+      
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-4">
           {/* User Avatar */}

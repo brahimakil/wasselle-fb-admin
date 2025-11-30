@@ -127,8 +127,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">All Status</option>
+          <option value="pending">🔴 NEW (Pending)</option>
           <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
           <option value="failed">Failed</option>
           <option value="cancelled">Cancelled</option>
         </select>
@@ -159,7 +159,15 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
               filteredTransactions.map((transaction) => {
                 const user = getUserById(transaction.userId);
                 return (
-                  <tr key={transaction.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <tr key={transaction.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 relative">
+                    {/* NEW Badge for pending transactions */}
+                    {transaction.status === 'pending' && transaction.type === 'recharge' && (
+                      <td className="absolute -top-2 right-4">
+                        <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+                          NEW
+                        </span>
+                      </td>
+                    )}
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white text-xs">

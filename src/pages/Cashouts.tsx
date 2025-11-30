@@ -282,7 +282,7 @@ const Cashouts: React.FC = () => {
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'all', label: 'All Requests', count: stats.totalRequests },
-              { id: 'pending', label: 'Pending', count: stats.pendingRequests },
+              { id: 'pending', label: '🔴 NEW (Pending)', count: stats.pendingRequests },
               { id: 'completed', label: 'Completed', count: stats.completedRequests },
               { id: 'cancelled', label: 'Cancelled', count: cashouts.filter(c => c.status === 'cancelled').length }
             ].map((tab) => (

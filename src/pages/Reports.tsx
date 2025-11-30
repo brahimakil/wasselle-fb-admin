@@ -125,7 +125,7 @@ const Reports: React.FC = () => {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          Pending
+          🔴 NEW (Pending)
         </button>
         <button
           onClick={() => setStatusFilter('reviewed')}
@@ -168,8 +168,17 @@ const Reports: React.FC = () => {
           {reports.map((report) => (
             <div
               key={report.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow relative"
             >
+              {/* NEW Badge for pending reports */}
+              {report.status === 'pending' && (
+                <div className="absolute top-4 right-4 z-10">
+                  <span className="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+                    NEW
+                  </span>
+                </div>
+              )}
+              
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
