@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 export interface LiveTaxiPost {
   id: string;
   userId: string;
@@ -7,13 +5,9 @@ export interface LiveTaxiPost {
   userPhone?: string;
   
   // Location Information
-  fromCityId: string;
-  fromCityName: string;
   fromCountryId: string;
   fromCountryName: string;
   
-  toCityId: string;
-  toCityName: string;
   toCountryId: string;
   toCountryName: string;
   
@@ -87,7 +81,6 @@ export interface LiveTaxiFilters {
   status?: 'waiting' | 'accepted' | 'completed' | 'cancelled';
   serviceType?: 'taxi' | 'delivery';  // 🆕 Filter by service type
   countryId?: string;
-  cityId?: string;
   userId?: string;
   startDate?: string;
   endDate?: string;

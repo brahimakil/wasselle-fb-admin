@@ -6,8 +6,7 @@ import {
   query, 
   where, 
   orderBy,
-  getDoc,
-  Timestamp 
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { 
@@ -99,20 +98,14 @@ export class LiveTaxiService {
         );
       }
 
-      // Apply additional filters that can't be done in Firestore query
-      if (filters?.cityId) {
-        posts = posts.filter(
-          post => post.fromCityId === filters.cityId || post.toCityId === filters.cityId
-        );
-      }
-
+      // Apply additional filters
       if (filters?.search) {
         const searchLower = filters.search.toLowerCase();
         posts = posts.filter(
           post =>
             post.userName.toLowerCase().includes(searchLower) ||
-            post.fromCityName.toLowerCase().includes(searchLower) ||
-            post.toCityName.toLowerCase().includes(searchLower) ||
+            post.fromCountryName.toLowerCase().includes(searchLower) ||
+            post.toCountryName.toLowerCase().includes(searchLower) ||
             post.acceptedDriverName?.toLowerCase().includes(searchLower) ||
             post.userPhone?.toLowerCase().includes(searchLower) ||
             post.contactPhone?.toLowerCase().includes(searchLower)

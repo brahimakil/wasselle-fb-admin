@@ -118,12 +118,11 @@ const LiveTaxiPostCard: React.FC<LiveTaxiPostCardProps> = ({ post, onUpdate }) =
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {/* 🆕 Service Type Badge */}
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getServiceTypeBadge()}`}>
-                {getServiceTypeText()}
-              </span>
-              
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {post.fromCityName} → {post.toCityName}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getServiceTypeBadge()}`}>
+                  {getServiceTypeText()}
+                </span>
+                <span>{post.fromCountryName} → {post.toCountryName}</span>
               </h3>
               
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(post.status)}`}>

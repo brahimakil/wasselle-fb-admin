@@ -82,15 +82,13 @@ const ViewLiveTaxiModal: React.FC<ViewLiveTaxiModalProps> = ({ post, onClose }) 
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Route</h3>
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">From</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{post.fromCityName}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{post.fromCountryName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">From Country</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{post.fromCountryName}</p>
               </div>
               <div className="text-2xl">→</div>
               <div className="flex-1 text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">To</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{post.toCityName}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{post.toCountryName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">To Country</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{post.toCountryName}</p>
               </div>
             </div>
           </div>
