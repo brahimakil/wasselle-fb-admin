@@ -23,6 +23,7 @@ import Vehicles from './pages/Vehicles';
 import PaymentMethods from './pages/PaymentMethods';
 import Cashouts from './pages/Cashouts';
 import { WeightBracketsPage } from './pages/WeightBracketsPage';
+import VersionControl from './pages/VersionControl';
 import { PostService } from './services/postService';
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="ratings" element={<Ratings />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="version-control" element={<VersionControl />} />
               <Route path="weight-brackets" element={<WeightBracketsPage />} />
             </Route>
             

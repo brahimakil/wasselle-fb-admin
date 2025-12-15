@@ -144,6 +144,12 @@ const Sidebar: React.FC = () => {
             </svg>
           )
         },
+        {
+          id: 'version-control',
+          label: 'Version Control',
+          path: '/admin/version-control',
+          icon: RocketIcon
+        },
         { 
           id: 'notifications', 
           label: 'Send Notifications', 
